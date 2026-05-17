@@ -197,9 +197,21 @@ canvas {
 .mcard.tier3 { border-color:#8E44AD; }
 .mcard.tier4 { border-color:#e74c3c; }
 .mcard.tower  { border-color:#2ecc71; }
+#drag-ghost {
+  display:none; position:fixed; pointer-events:none; z-index:9999;
+  width:48px; height:48px; border-radius:50%;
+  background:rgba(46,204,113,0.25); border:2px solid rgba(46,204,113,0.6);
+  font-size:28px; line-height:48px; text-align:center;
+  transform:translate(-50%,-50%);
+  transition: background 0.1s, border-color 0.1s;
+}
+#drag-ghost.bad {
+  background:rgba(231,76,60,0.25); border-color:rgba(231,76,60,0.6);
+}
 </style>
 </head>
 <body>
+<div id="drag-ghost"></div>
 <div id="game-wrap">
 
   <!-- TOP BAR -->
@@ -1371,17 +1383,19 @@ function buildPanel(){
     b.className='tbtn'; b.dataset.cost=def.cost; b.dataset.id=def.id;
     b.title=def.tip;
     b.innerHTML=`<div class="te">${def.emoji}</div><div class="tn">${def.name}</div><div class="tc">💰${def.cost}</div>`;
-    b.onclick=()=>{
-      if(G.gold<def.cost) return;
-      G.selTower=def;
-      document.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('sel'));
-      b.classList.add('sel');
-    };
+    b.addEventListener('mousedown',e=>{
+      e.preventDefault();
+      startDrag(def,e.clientX,e.clientY);
+    });
+    b.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      startDrag(def,e.touches[0].clientX,e.touches[0].clientY);
+    },{passive:false});
     bar.appendChild(b);
   });
   const hint=document.createElement('span');
   hint.className='hint';
-  hint.innerHTML='Left-click: place &nbsp;|&nbsp; Right-click: cancel';
+  hint.textContent='Drag tower onto the grid to place';
   bar.appendChild(hint);
   updateBtns();
 }
@@ -1394,65 +1408,76 @@ function updateBtns(){
   });
 }
 
-// ─── CANVAS INPUT ─────────────────────────────────────────────
-// Scale factor helper: accounts for CSS transform shrinking the canvas visually
+// ─── CANVAS COORDS ────────────────────────────────────────────
+// Accounts for CSS transform shrinking the canvas visually
 function cvCoords(clientX, clientY){
   const r=cv.getBoundingClientRect();
   const sx=cv.width/r.width, sy=cv.height/r.height;
   return [Math.floor((clientX-r.left)*sx/CS), Math.floor((clientY-r.top)*sy/CS)];
 }
 
-cv.addEventListener('mousemove',e=>{
-  [G.mCol,G.mRow]=cvCoords(e.clientX,e.clientY);
-});
-cv.addEventListener('mouseleave',()=>{G.mCol=-1;G.mRow=-1;});
-cv.addEventListener('click',e=>{
-  const [col,row]=cvCoords(e.clientX,e.clientY);
-  G.click(col,row);
-});
-cv.addEventListener('contextmenu',e=>{
-  e.preventDefault();
+function overCanvas(clientX, clientY){
+  const r=cv.getBoundingClientRect();
+  return clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom;
+}
+
+// ─── DRAG & DROP ──────────────────────────────────────────────
+let dragDef=null;
+const ghost=id('drag-ghost');
+
+function startDrag(def,clientX,clientY){
+  if(!G.running||G.gold<def.cost) return;
+  dragDef=def;
+  G.selTower=def;
+  ghost.textContent=def.emoji;
+  ghost.style.display='block';
+  moveDrag(clientX,clientY);
+}
+
+function moveDrag(clientX,clientY){
+  if(!dragDef) return;
+  ghost.style.left=clientX+'px';
+  ghost.style.top=clientY+'px';
+  if(overCanvas(clientX,clientY)){
+    [G.mCol,G.mRow]=cvCoords(clientX,clientY);
+    const isPath=PATH.has(`${G.mCol},${G.mRow}`);
+    const hasTow=G.towers.some(t=>t.col===G.mCol&&t.row===G.mRow);
+    ghost.classList.toggle('bad',isPath||hasTow);
+  } else {
+    G.mCol=-1; G.mRow=-1;
+    ghost.classList.remove('bad');
+  }
+}
+
+function endDrag(clientX,clientY){
+  if(!dragDef) return;
+  if(overCanvas(clientX,clientY)){
+    const [col,row]=cvCoords(clientX,clientY);
+    G.click(col,row);
+  }
+  dragDef=null;
   G.selTower=null;
-  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
-});
-
-// Touch support
-cv.addEventListener('touchstart',e=>{
-  e.preventDefault();
-  const t=e.touches[0];
-  const [col,row]=cvCoords(t.clientX,t.clientY);
-  G.click(col,row);
-},{passive:false});
-
-cv.addEventListener('touchmove',e=>{
-  e.preventDefault();
-  const t=e.touches[0];
-  [G.mCol,G.mRow]=cvCoords(t.clientX,t.clientY);
-},{passive:false});
-
-cv.addEventListener('touchend',e=>{
-  e.preventDefault();
   G.mCol=-1; G.mRow=-1;
-},{passive:false});
+  ghost.style.display='none';
+  ghost.classList.remove('bad');
+}
+
+document.addEventListener('mousemove',e=>{ if(dragDef) moveDrag(e.clientX,e.clientY); });
+document.addEventListener('mouseup',  e=>{ if(dragDef) endDrag(e.clientX,e.clientY); });
+document.addEventListener('touchmove',e=>{ if(dragDef){ e.preventDefault(); moveDrag(e.touches[0].clientX,e.touches[0].clientY); } },{passive:false});
+document.addEventListener('touchend', e=>{ if(dragDef){ e.preventDefault(); const t=e.changedTouches[0]; endDrag(t.clientX,t.clientY); } },{passive:false});
 
 // ─── RESPONSIVE SCALING ───────────────────────────────────────
 function fitToScreen(){
   const wrap=id('game-wrap');
-  wrap.style.transform='none'; // reset before measuring
+  wrap.style.transform='none';
   const scale=Math.min(1, window.innerWidth/920, window.innerHeight/wrap.offsetHeight);
   wrap.style.transform=`scale(${scale})`;
-  // Centre vertically if space allows
   const gap=Math.max(0,(window.innerHeight-wrap.offsetHeight*scale)/2);
   wrap.style.marginTop=gap+'px';
 }
 window.addEventListener('resize',fitToScreen);
 window.addEventListener('orientationchange',()=>setTimeout(fitToScreen,100));
-
-// Update hint text on touch devices
-if('ontouchstart' in window){
-  const hint=document.querySelector('.hint');
-  if(hint) hint.textContent='Tap to place | Tap tower button again to cancel';
-}
 
 // ─── BOOT ─────────────────────────────────────────────────────
 buildPanel();
