@@ -794,7 +794,6 @@ const G = {
     if(e.dead) return;
     e.dead=true;
     this.gold+=e.type.rwd;
-    this.anger=Math.min(100,this.anger+e.type.ang*0.3);
     sv('sv-gold',this.gold);
     this.updateAnger();
     updateBtns();
