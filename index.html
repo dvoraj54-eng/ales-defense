@@ -2,20 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Ales's Hardware Defense 🔧</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   background: #0d0d1a;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  min-height: 100vh;
+  align-items: center; justify-content: flex-start;
+  min-height: 100vh; overflow: hidden;
   font-family: 'Segoe UI', Tahoma, sans-serif;
   color: white;
-  user-select: none;
+  user-select: none; touch-action: none;
 }
-#game-wrap { position: relative; }
+#game-wrap {
+  position: relative;
+  transform-origin: top center;
+}
 
 #topbar {
   width: 920px;
@@ -82,8 +85,11 @@ canvas {
   border-radius: 0 0 8px 8px;
   padding: 8px 12px;
   display: flex; align-items: center; gap: 8px;
-  flex-wrap: wrap;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
 }
+#bottombar::-webkit-scrollbar { height: 3px; }
+#bottombar::-webkit-scrollbar-thumb { background: #2a2a55; border-radius: 2px; }
 .barlabel { font-size:12px; color:#888; margin-right:4px; white-space:nowrap; }
 
 .tbtn {
@@ -1344,15 +1350,20 @@ function updateBtns(){
 }
 
 // ─── CANVAS INPUT ─────────────────────────────────────────────
-cv.addEventListener('mousemove',e=>{
+// Scale factor helper: accounts for CSS transform shrinking the canvas visually
+function cvCoords(clientX, clientY){
   const r=cv.getBoundingClientRect();
-  G.mCol=Math.floor((e.clientX-r.left)/CS);
-  G.mRow=Math.floor((e.clientY-r.top)/CS);
+  const sx=cv.width/r.width, sy=cv.height/r.height;
+  return [Math.floor((clientX-r.left)*sx/CS), Math.floor((clientY-r.top)*sy/CS)];
+}
+
+cv.addEventListener('mousemove',e=>{
+  [G.mCol,G.mRow]=cvCoords(e.clientX,e.clientY);
 });
 cv.addEventListener('mouseleave',()=>{G.mCol=-1;G.mRow=-1;});
 cv.addEventListener('click',e=>{
-  const r=cv.getBoundingClientRect();
-  G.click(Math.floor((e.clientX-r.left)/CS),Math.floor((e.clientY-r.top)/CS));
+  const [col,row]=cvCoords(e.clientX,e.clientY);
+  G.click(col,row);
 });
 cv.addEventListener('contextmenu',e=>{
   e.preventDefault();
@@ -1360,8 +1371,47 @@ cv.addEventListener('contextmenu',e=>{
   document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
 });
 
+// Touch support
+cv.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const t=e.touches[0];
+  const [col,row]=cvCoords(t.clientX,t.clientY);
+  G.click(col,row);
+},{passive:false});
+
+cv.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  const t=e.touches[0];
+  [G.mCol,G.mRow]=cvCoords(t.clientX,t.clientY);
+},{passive:false});
+
+cv.addEventListener('touchend',e=>{
+  e.preventDefault();
+  G.mCol=-1; G.mRow=-1;
+},{passive:false});
+
+// ─── RESPONSIVE SCALING ───────────────────────────────────────
+function fitToScreen(){
+  const wrap=id('game-wrap');
+  wrap.style.transform='none'; // reset before measuring
+  const scale=Math.min(1, window.innerWidth/920, window.innerHeight/wrap.offsetHeight);
+  wrap.style.transform=`scale(${scale})`;
+  // Centre vertically if space allows
+  const gap=Math.max(0,(window.innerHeight-wrap.offsetHeight*scale)/2);
+  wrap.style.marginTop=gap+'px';
+}
+window.addEventListener('resize',fitToScreen);
+window.addEventListener('orientationchange',()=>setTimeout(fitToScreen,100));
+
+// Update hint text on touch devices
+if('ontouchstart' in window){
+  const hint=document.querySelector('.hint');
+  if(hint) hint.textContent='Tap to place | Tap tower button again to cancel';
+}
+
 // ─── BOOT ─────────────────────────────────────────────────────
 buildPanel();
+fitToScreen();
 </script>
 </body>
 </html>
