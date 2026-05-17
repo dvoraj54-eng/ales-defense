@@ -57,6 +57,18 @@ body {
 }
 #rage-btn:hover { background: linear-gradient(135deg, #e74c3c, #ff6b6b); }
 
+#pause-btn, #menu-btn {
+  border-radius: 6px; padding: 6px 12px;
+  color: white; font-weight: bold; font-size: 12px;
+  cursor: pointer; border: 2px solid;
+  white-space: nowrap; transition: all 0.15s;
+}
+#pause-btn { background: #1a1a45; border-color: #4444aa; }
+#pause-btn:hover { background: #2a2a65; border-color: #6666cc; }
+#pause-btn.paused { background: #1a3a1a; border-color: #2ecc71; color: #2ecc71; }
+#menu-btn { background: #2a1a1a; border-color: #663333; }
+#menu-btn:hover { background: #3a2a2a; border-color: #994444; }
+
 canvas {
   display: block;
   cursor: crosshair;
@@ -161,6 +173,8 @@ canvas {
       </div>
     </div>
     <button id="rage-btn" onclick="G.activateRage()">😡 RAGE MODE!</button>
+    <button id="pause-btn" onclick="G.togglePause()">⏸ Pause</button>
+    <button id="menu-btn" onclick="G.backToMenu()">🏠 Menu</button>
   </div>
 
   <!-- CANVAS -->
@@ -299,7 +313,7 @@ const cx = cv.getContext('2d');
 const G = {
   // state
   gold:100, health:20, anger:0, wave:0,
-  running:false, over:false,
+  running:false, over:false, paused:false,
   rageReady:false, rageActive:false, rageTimer:0,
   frame:0,
 
@@ -325,7 +339,7 @@ const G = {
   reset(){
     Object.assign(this,{
       gold:100, health:20, anger:0, wave:0,
-      running:true, over:false,
+      running:true, over:false, paused:false,
       rageReady:false, rageActive:false, rageTimer:0, frame:0,
       towers:[], enemies:[], projs:[], particles:[], floats:[],
       waveQ:[], wqIdx:0, wqElapsed:0, waveRunning:false,
@@ -368,6 +382,39 @@ const G = {
 
   angerMult(){ return 1 + (this.anger/100)*1.6; }, // 1.0 → 2.6×
 
+  togglePause(){
+    if(!this.running) return;
+    this.paused=!this.paused;
+    const btn=id('pause-btn');
+    btn.textContent=this.paused?'▶ Resume':'⏸ Pause';
+    btn.classList.toggle('paused',this.paused);
+    if(!this.paused) requestAnimationFrame(()=>G.loop());
+  },
+
+  backToMenu(){
+    this.running=false;
+    this.paused=false;
+    id('pause-btn').textContent='⏸ Pause';
+    id('pause-btn').classList.remove('paused');
+    // Restore the original start overlay
+    const ov=id('overlay');
+    ov.innerHTML=`
+      <div style="font-size:64px">🔧</div>
+      <h1>Ales's Hardware Defense</h1>
+      <p>Help <strong>Ales</strong> defend his precious automotive testing hardware!
+      Teams messages, project tasks, calls, managers, and entire companies are coming.
+      Place towers, let his anger fuel the damage, and survive 10 waves.</p>
+      <div class="tip-grid">
+        <div class="tip"><b>😤 Anger bar</b> fills as enemies hit. More anger = more damage for ALL towers.</div>
+        <div class="tip"><b>😡 RAGE MODE</b> unlocks at 100% anger — triggers a devastating AoE shout.</div>
+        <div class="tip"><b>🛒 Bazoš.cz</b> converts Tasks into Czech car ads that walk to the stash and heal Ales!</div>
+        <div class="tip"><b>📸 Instagram</b> has completely unpredictable effects. Czech Republic's finest chaos.</div>
+      </div>
+      <button class="obtn" onclick="G.start()">🎮 Start Defending!</button>
+    `;
+    ov.style.display='flex';
+  },
+
   activateRage(){
     if(!this.rageReady||this.rageActive) return;
     this.rageActive=true; this.rageTimer=150;
@@ -397,6 +444,17 @@ const G = {
   // ── LOOP ─────────────────────────────────────────────────────
   loop(){
     if(!this.running) return;
+    if(this.paused){
+      // Draw a semi-transparent pause overlay and stop advancing
+      cx.fillStyle='rgba(0,0,0,0.55)';
+      cx.fillRect(0,0,CW,CH);
+      cx.font='bold 36px Segoe UI';
+      cx.fillStyle='white'; cx.textAlign='center'; cx.textBaseline='middle';
+      cx.fillText('⏸ Paused',CW/2,CH/2-16);
+      cx.font='14px Segoe UI'; cx.fillStyle='#aaa';
+      cx.fillText('Press the Resume button to continue',CW/2,CH/2+24);
+      return; // don't schedule next frame — togglePause will restart it
+    }
     this.frame++;
 
     cx.clearRect(0,0,CW,CH);
@@ -545,6 +603,14 @@ const G = {
 
   hitStash(e){
     e.dead=true;
+    if(e.type.id==='car'){
+      // Car ad delivers a sold item — heals +1 hardware
+      this.health=Math.min(20,this.health+1);
+      sv('sv-health',this.health);
+      this.spawnBurst(e.x,e.y,'🔧',4);
+      this.float(e.x,e.y-28,'+1 🔧 delivered!','#2ecc71');
+      return;
+    }
     if(e.type.dmg>0){
       this.health=Math.max(0,this.health-e.type.dmg);
       this.anger=Math.min(100,this.anger+e.type.ang*0.4);
@@ -584,7 +650,7 @@ const G = {
     // Find furthest-progressed enemy in range
     let best=null, bestProg=-1;
     for(const e of this.enemies){
-      if(e.dead) continue;
+      if(e.dead||e.type.id==='car') continue;
       const dx=e.x-tx, dy=e.y-ty;
       if(Math.sqrt(dx*dx+dy*dy)>rng) continue;
       const prog=e.wi+(e.wi<WPIX.length?
