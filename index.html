@@ -299,7 +299,7 @@ const STASH_COL = COLS-1, STASH_ROW = 3;
 const ET = {
   msg:{
     id:'msg', name:'Teams Message', emoji:'💬',
-    hp:30, spd:0.82, dmg:1, ang:6, rwd:8, sz:26, tier:1,
+    hp:30, spd:0.82, dmg:1, ang:18, rwd:8, sz:26, tier:1,
     col:'#6264A7',
     texts:[
       "do you have a minute? 😊",
@@ -326,7 +326,7 @@ const ET = {
   },
   call:{
     id:'call', name:'Teams Call', emoji:'📞',
-    hp:90, spd:0.55, dmg:4, ang:15, rwd:20, sz:36, tier:2,
+    hp:90, spd:0.55, dmg:4, ang:30, rwd:20, sz:36, tier:2,
     col:'#0078D4',
     texts:[
       'Ares Pulse',
@@ -343,7 +343,7 @@ const ET = {
   },
   task:{
     id:'task', name:'Task', emoji:'📋',
-    hp:75, spd:0.50, dmg:5, ang:20, rwd:20, sz:34, tier:2,
+    hp:75, spd:0.50, dmg:5, ang:35, rwd:20, sz:34, tier:2,
     col:'#E07020',
     texts:[
       'Invoicing',
@@ -361,7 +361,7 @@ const ET = {
   },
   areamgr:{
     id:'areamgr', name:'Area Manager', emoji:'👔',
-    hp:280, spd:0.34, dmg:10, ang:25, rwd:50, sz:42, tier:3,
+    hp:280, spd:0.34, dmg:10, ang:45, rwd:50, sz:42, tier:3,
     col:'#8E44AD',
     texts:[
       'Can you help me with tender calculation?',
@@ -373,7 +373,7 @@ const ET = {
   },
   chapermgr:{
     id:'chapermgr', name:'Chapter Manager', emoji:'🧑‍💼',
-    hp:280, spd:0.34, dmg:10, ang:25, rwd:50, sz:42, tier:3,
+    hp:280, spd:0.34, dmg:10, ang:45, rwd:50, sz:42, tier:3,
     col:'#6C3483',
     texts:[
       'Do you really need Tomáš Novák for 50%?',
@@ -386,7 +386,7 @@ const ET = {
   },
   corp:{
     id:'corp', name:'Corporate Boss', emoji:'🏢',
-    hp:850, spd:0.20, dmg:25, ang:40, rwd:120, sz:52, tier:4,
+    hp:850, spd:0.20, dmg:25, ang:60, rwd:120, sz:52, tier:4,
     col:'#2C3E50',
     texts:['Volkswagen','Škoda','Cariad','Alten','Embitel','Microsoft']
   }
@@ -788,6 +788,7 @@ const G = {
     if(e.dead) return;
     e.dead=true;
     this.gold+=e.type.rwd;
+    this.anger=Math.min(100,this.anger+e.type.ang*0.3);
     sv('sv-gold',this.gold);
     this.updateAnger();
     updateBtns();
@@ -963,16 +964,22 @@ const G = {
     this.emoji('💻',sx+16,sy+16,18);
     this.emoji('🔋',sx+2,sy+20,14);
 
-    // Ales character (guarding stash)
-    const ax=(COLS-3)*CS+CS/2, ay=STASH_ROW*CS+CS/2;
+    // Ales character — below the last path segment, large and solid
+    const ax=(COLS-3)*CS+CS/2, ay=(STASH_ROW+2)*CS+CS/2;
     const face=this.anger>80?'🤬':this.anger>55?'😤':this.anger>25?'😠':'🧑‍💼';
-    this.emoji(face,ax,ay,34);
-    // Ales name tag
-    cx.fillStyle='rgba(0,0,0,0.6)';
-    cx.fillRect(ax-20,ay+20,40,13);
-    cx.fillStyle='#ccc'; cx.font='bold 9px Segoe UI';
+    // Solid background circle so he stands out
+    cx.fillStyle='#1a1a3a';
+    cx.beginPath(); cx.arc(ax,ay,28,0,Math.PI*2); cx.fill();
+    cx.strokeStyle=this.anger>80?'#e74c3c':this.anger>50?'#f39c12':'#4444aa';
+    cx.lineWidth=2;
+    cx.beginPath(); cx.arc(ax,ay,28,0,Math.PI*2); cx.stroke();
+    this.emoji(face,ax,ay,44);
+    // Name tag
+    cx.fillStyle='#1a1a3a';
+    cx.fillRect(ax-22,ay+30,44,14);
+    cx.fillStyle='white'; cx.font='bold 10px Segoe UI';
     cx.textAlign='center'; cx.textBaseline='top';
-    cx.fillText('Ales',ax,ay+22);
+    cx.fillText('Ales',ax,ay+32);
   },
 
   drawTowers(){
