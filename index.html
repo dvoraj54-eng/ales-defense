@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ales's Hardware Defense 🔧</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d1a;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  color: white;
+  user-select: none;
+}
+#game-wrap { position: relative; }
+
+#topbar {
+  width: 920px;
+  background: #111128;
+  border: 2px solid #2a2a55;
+  border-bottom: 1px solid #1a1a3a;
+  border-radius: 8px 8px 0 0;
+  padding: 8px 14px;
+  display: flex; align-items: center; gap: 18px;
+}
+.stat { display:flex; align-items:center; gap:6px; }
+.stat-label { font-size:11px; color:#888; }
+.stat-value { font-size:18px; font-weight:bold; min-width:28px; text-align:center; }
+.divider { width:1px; height:36px; background:#2a2a55; }
+
+#anger-wrap { flex:1; }
+#anger-meta { font-size:11px; color:#888; margin-bottom:3px; display:flex; justify-content:space-between; }
+#anger-bar-bg {
+  height:18px; background:#1a1a35; border-radius:9px;
+  overflow:hidden; position:relative;
+}
+#anger-bar { height:100%; width:0%; border-radius:9px; transition:width 0.2s; }
+#anger-text {
+  position:absolute; inset:0; display:flex; align-items:center;
+  justify-content:center; font-size:11px; font-weight:bold;
+}
+#rage-btn {
+  background: linear-gradient(135deg, #c0392b, #e74c3c);
+  border: 2px solid #ff6b6b;
+  border-radius: 6px; padding: 6px 14px;
+  color: white; font-weight: bold; font-size: 13px;
+  cursor: pointer; display:none;
+  animation: ragePulse 0.6s ease-in-out infinite alternate;
+  white-space:nowrap;
+}
+@keyframes ragePulse {
+  from { box-shadow: 0 0 6px #e74c3c; }
+  to { box-shadow: 0 0 20px #e74c3c, 0 0 40px #c0392b; }
+}
+#rage-btn:hover { background: linear-gradient(135deg, #e74c3c, #ff6b6b); }
+
+canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+#bottombar {
+  width: 920px;
+  background: #111128;
+  border: 2px solid #2a2a55;
+  border-top: 1px solid #1a1a3a;
+  border-radius: 0 0 8px 8px;
+  padding: 8px 12px;
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap;
+}
+.barlabel { font-size:12px; color:#888; margin-right:4px; white-space:nowrap; }
+
+.tbtn {
+  background: #1a1a35;
+  border: 2px solid #333366;
+  border-radius: 6px; padding: 5px 9px;
+  cursor: pointer; color: white;
+  display: flex; flex-direction:column; align-items:center;
+  min-width: 72px; transition: all 0.15s;
+}
+.tbtn:hover { border-color: #6666cc; background: #22224a; }
+.tbtn.sel { border-color: #f1c40f; background: #2a2a1a; }
+.tbtn.rich { border-color: #2ecc71; }
+.tbtn.poor { opacity: 0.45; cursor: not-allowed; }
+.tbtn .te { font-size: 22px; line-height:1.2; }
+.tbtn .tn { font-size: 9px; color: #aaa; line-height:1.2; }
+.tbtn .tc { font-size: 10px; color: #f1c40f; }
+
+.hint { font-size:11px; color:#555; margin-left:auto; white-space:nowrap; }
+
+#overlay {
+  position:absolute; top:0; left:0; width:920px; height:598px;
+  background: rgba(5,5,20,0.92);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:16px; border-radius:4px; z-index:10;
+  padding: 30px;
+}
+#overlay h1 { font-size:40px; text-align:center; }
+#overlay p { font-size:15px; color:#bbb; text-align:center; max-width:600px; line-height:1.6; }
+.obtn {
+  background: #27ae60; border:none; padding:12px 36px;
+  font-size:18px; color:white; border-radius:8px;
+  cursor:pointer; font-weight:bold; margin-top:8px;
+  transition: background 0.2s;
+}
+.obtn:hover { background: #2ecc71; }
+.obtn.red { background: #c0392b; }
+.obtn.red:hover { background: #e74c3c; }
+.tip-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:8px; width:100%; max-width:560px; margin-top:4px;
+}
+.tip {
+  background: #1a1a35; border-radius:6px; padding:8px 10px;
+  font-size:12px; color:#ccc; text-align:left;
+}
+.tip b { color:#f1c40f; }
+</style>
+</head>
+<body>
+<div id="game-wrap">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="stat">
+      <span style="font-size:22px">🔧</span>
+      <div>
+        <div class="stat-label">Hardware Stash</div>
+        <div class="stat-value" id="sv-health">20</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="stat">
+      <span style="font-size:22px">💰</span>
+      <div>
+        <div class="stat-label">Budget</div>
+        <div class="stat-value" id="sv-gold">100</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="stat">
+      <span style="font-size:22px">🌊</span>
+      <div>
+        <div class="stat-label">Wave</div>
+        <div class="stat-value" id="sv-wave">—</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div id="anger-wrap">
+      <div id="anger-meta">
+        <span>😤 Ales's Anger (boosts all damage!)</span>
+        <span id="anger-mult-lbl">1.0× dmg</span>
+      </div>
+      <div id="anger-bar-bg">
+        <div id="anger-bar"></div>
+        <div id="anger-text">calm 😐</div>
+      </div>
+    </div>
+    <button id="rage-btn" onclick="G.activateRage()">😡 RAGE MODE!</button>
+  </div>
+
+  <!-- CANVAS -->
+  <canvas id="gc" width="920" height="598"></canvas>
+
+  <!-- BOTTOM BAR -->
+  <div id="bottombar">
+    <span class="barlabel">🏗️ Build:</span>
+    <!-- tower buttons injected by JS -->
+    <span class="hint">Left-click: place | Right-click: cancel</span>
+  </div>
+
+  <!-- OVERLAY -->
+  <div id="overlay">
+    <div style="font-size:64px">🔧</div>
+    <h1>Ales's Hardware Defense</h1>
+    <p>
+      Help <strong>Ales</strong> defend his precious automotive testing hardware!
+      Teams messages, project tasks, calls, managers, and entire companies are coming.
+      Place towers, let his anger fuel the damage, and survive 10 waves.
+    </p>
+    <div class="tip-grid">
+      <div class="tip"><b>😤 Anger bar</b> fills as enemies hit. More anger = more damage for ALL towers.</div>
+      <div class="tip"><b>😡 RAGE MODE</b> unlocks at 100% anger — triggers a devastating AoE shout.</div>
+      <div class="tip"><b>🛒 Bazoš.cz</b> converts Tasks into Czech car ads, healing Ales. Most powerful tower.</div>
+      <div class="tip"><b>📸 Instagram</b> has completely unpredictable effects. Czech Republic's finest chaos.</div>
+    </div>
+    <button class="obtn" onclick="G.start()">🎮 Start Defending!</button>
+  </div>
+
+</div>
+
+<script>
+// ─── CONSTANTS ────────────────────────────────────────────────
+const COLS = 20, ROWS = 13, CS = 46; // cell size
+const CW = COLS * CS, CH = ROWS * CS; // 920 × 598
+
+// Grid path: [col, row] waypoints
+const WAYPTS = [[-1,2],[6,2],[6,9],[13,9],[13,3],[COLS,3]];
+// Pixel centres
+const WPIX = WAYPTS.map(([c,r]) => [c*CS+CS/2, r*CS+CS/2]);
+
+// Build set of path cells
+const PATH = new Set();
+for (let i=0;i<WAYPTS.length-1;i++){
+  const [c1,r1]=WAYPTS[i],[c2,r2]=WAYPTS[i+1];
+  if(r1===r2) for(let c=Math.min(c1,c2);c<=Math.max(c1,c2);c++) PATH.add(`${c},${r1}`);
+  else        for(let r=Math.min(r1,r2);r<=Math.max(r1,r2);r++) PATH.add(`${c1},${r}`);
+}
+
+// Stash cell (end of path, last reachable col)
+const STASH_COL = COLS-1, STASH_ROW = 3;
+
+// ─── ENEMY TYPES ─────────────────────────────────────────────
+const ET = {
+  msg:{
+    id:'msg', name:'Teams Message', emoji:'💬',
+    hp:30, spd:0.82, dmg:1, ang:6, rwd:8, sz:26, tier:1,
+    col:'#6264A7',
+    texts:["do you have a minute? 😊","don't forget the invoicing!","still missing CTS results","could you explain your test reporting?","quick question about the project 🙂","reminder: submit your timesheet","just a quick update needed 👍"]
+  },
+  call:{
+    id:'call', name:'Teams Call', emoji:'📞',
+    hp:90, spd:0.55, dmg:4, ang:15, rwd:20, sz:36, tier:2,
+    col:'#0078D4',
+    texts:['Ares Pulse','Result Review with Škoda','Sprint Planning','Daily Meeting','Sync call (15 min, promise!)','Retrospective (2h)']
+  },
+  task:{
+    id:'task', name:'Task', emoji:'📋',
+    hp:75, spd:0.50, dmg:5, ang:20, rwd:20, sz:34, tier:2,
+    col:'#E07020',
+    texts:['Invoicing','Project Report','Storage Organisation','PEACE System','Shopping for his wife 😅','1:1 with Manager','AI Training','Workplace Safety Training','Windows Update','CTS Results Deadline']
+  },
+  mgr:{
+    id:'mgr', name:'Manager', emoji:'👔',
+    hp:280, spd:0.34, dmg:10, ang:25, rwd:50, sz:42, tier:3,
+    col:'#8E44AD',
+    texts:['Area Manager','Chapter Manager','Head of Department','CEO']
+  },
+  corp:{
+    id:'corp', name:'Corporate Boss', emoji:'🏢',
+    hp:850, spd:0.20, dmg:25, ang:40, rwd:120, sz:52, tier:4,
+    col:'#2C3E50',
+    texts:['Volkswagen','Škoda','Cariad','Alten','Embitel','Microsoft','AI (General) 🤖']
+  }
+};
+
+const CAR_TYPE = {
+  id:'car', name:'Car Ad', emoji:'🚗',
+  hp:14, spd:1.6, dmg:0, ang:0, rwd:3, sz:28, tier:0,
+  col:'#27AE60',
+  texts:['Škoda Octavia 2008, 120k km','BMW 3er diesel, dobrý stav','Ford Focus 1.6 TDCi','VW Golf IV, málo km, nekuřák','Seat Leon 2010, nová STK']
+};
+
+// ─── TOWER DEFS ───────────────────────────────────────────────
+const TD = [
+  {id:'coffee',  name:'Coffee Machine', emoji:'☕',  cost:50,  rng:2.8, dmg:9,  fr:55,  col:'#6F4E37', sp:'slow',     tip:'Slows all enemies'},
+  {id:'sheet',   name:'Spreadsheet',    emoji:'📊',  cost:75,  rng:2.4, dmg:22, fr:42,  col:'#217346', sp:'task2x',   tip:'+2× dmg vs Tasks & Calls'},
+  {id:'mute',    name:'Mute Button',    emoji:'🔇',  cost:65,  rng:3.0, dmg:11, fr:88,  col:'#C0392B', sp:'stun',     tip:'Stuns Calls; normal dmg others'},
+  {id:'ooo',     name:'Out of Office',  emoji:'🏖️', cost:80,  rng:2.6, dmg:6,  fr:110, col:'#F39C12', sp:'aoe',      tip:'AoE damage burst in range'},
+  {id:'insta',   name:'Instagram',      emoji:'📸',  cost:55,  rng:3.4, dmg:0,  fr:58,  col:'#C13584', sp:'random',   tip:'🎲 Complete randomness'},
+  {id:'bazos',   name:'Bazoš.cz',       emoji:'🛒',  cost:200, rng:4.2, dmg:14, fr:140, col:'#E67E22', sp:'bazos',    tip:'Converts tasks→car ads (+heal), slows bosses'},
+];
+
+// ─── WAVE RECIPES ─────────────────────────────────────────────
+function makeWave(n){
+  const q=[];
+  const a=(type,count,startDelay)=>{
+    for(let i=0;i<count;i++) q.push({type,t:startDelay+i*160});
+  };
+  if(n===1){a('msg',8,0);}
+  else if(n===2){a('msg',6,0);a('call',2,420);}
+  else if(n===3){a('msg',8,0);a('task',3,500);}
+  else if(n===4){a('msg',5,0);a('call',3,300);a('task',3,620);}
+  else if(n===5){a('msg',10,0);a('call',4,400);a('task',4,820);a('mgr',1,1300);}
+  else if(n===6){a('msg',8,0);a('task',6,400);a('mgr',2,950);}
+  else if(n===7){a('call',7,0);a('task',7,300);a('mgr',3,950);}
+  else if(n===8){a('msg',15,0);a('call',5,650);a('mgr',3,1250);a('corp',1,2100);}
+  else if(n===9){a('task',10,0);a('mgr',4,600);a('corp',2,1300);}
+  else if(n===10){
+    a('msg',12,0);a('call',8,500);a('task',8,850);
+    a('mgr',5,1500);a('corp',3,2300);
+  } else {
+    const x=n-10;
+    a('msg',10+x*2,0);a('call',5+x,400);a('task',5+x,750);
+    a('mgr',3+x,1300);a('corp',1+Math.floor(x/2),2200);
+  }
+  return q.sort((a,b)=>a.t-b.t);
+}
+
+// ─── CANVAS ───────────────────────────────────────────────────
+const cv = document.getElementById('gc');
+const cx = cv.getContext('2d');
+
+// ─── GAME OBJECT ──────────────────────────────────────────────
+const G = {
+  // state
+  gold:100, health:20, anger:0, wave:0,
+  running:false, over:false,
+  rageReady:false, rageActive:false, rageTimer:0,
+  frame:0,
+
+  // entities
+  towers:[], enemies:[], projs:[], particles:[], floats:[],
+
+  // wave
+  waveQ:[], wqIdx:0, wqElapsed:0, waveRunning:false,
+  nextWaveTick:90,  // ticks until first wave
+
+  // interaction
+  selTower:null, // tower def being placed
+  mCol:-1, mRow:-1,
+
+  // wave announcement
+  annText:'', annTimer:0,
+
+  start(){
+    document.getElementById('overlay').style.display='none';
+    this.reset();
+  },
+
+  reset(){
+    Object.assign(this,{
+      gold:100, health:20, anger:0, wave:0,
+      running:true, over:false,
+      rageReady:false, rageActive:false, rageTimer:0, frame:0,
+      towers:[], enemies:[], projs:[], particles:[], floats:[],
+      waveQ:[], wqIdx:0, wqElapsed:0, waveRunning:false,
+      nextWaveTick:90, annText:'', annTimer:0,
+      selTower:null, mCol:-1, mRow:-1,
+    });
+    id('overlay').style.display='none';
+    this.ui();
+    updateBtns();
+    requestAnimationFrame(()=>G.loop());
+  },
+
+  ui(){
+    sv('sv-health', this.health);
+    sv('sv-gold',   this.gold);
+    sv('sv-wave',   this.wave||'—');
+    this.updateAnger();
+  },
+
+  updateAnger(){
+    const a = this.anger;
+    const bar = id('anger-bar');
+    bar.style.width = a+'%';
+    if(a>80) bar.style.background='linear-gradient(90deg,#c0392b,#e74c3c)';
+    else if(a>50) bar.style.background='linear-gradient(90deg,#e67e22,#e74c3c)';
+    else bar.style.background='linear-gradient(90deg,#f1c40f,#e67e22)';
+
+    const faces=['calm 😐','irritated 😒','annoyed 😠','angry 😤','FURIOUS 😡'];
+    const fi = Math.min(4, Math.floor(a/21));
+    id('anger-text').textContent = faces[fi] + ' ' + Math.round(a)+'%';
+
+    const mult = this.angerMult();
+    id('anger-mult-lbl').textContent = mult.toFixed(2)+'× dmg';
+    id('anger-mult-lbl').style.color = mult>2?'#e74c3c':mult>1.5?'#f39c12':'#888';
+
+    const rb = id('rage-btn');
+    if(a>=100 && !this.rageActive){ rb.style.display='block'; this.rageReady=true; }
+    else { rb.style.display='none'; this.rageReady=false; }
+  },
+
+  angerMult(){ return 1 + (this.anger/100)*1.6; }, // 1.0 → 2.6×
+
+  activateRage(){
+    if(!this.rageReady||this.rageActive) return;
+    this.rageActive=true; this.rageTimer=150;
+    id('rage-btn').style.display='none';
+    // AoE damage to all enemies
+    const dmg = 100 * this.angerMult();
+    for(const e of this.enemies){
+      e.hp -= dmg;
+      this.float(e.x, e.y-20, `😡 ${Math.round(dmg)}!`, '#e74c3c');
+      if(e.hp<=0) this.killEnemy(e);
+    }
+    this.spawnBurst(CW/2, CH/2, '💢', 18);
+    this.anger=0; this.updateAnger();
+  },
+
+  // ── WAVE ─────────────────────────────────────────────────────
+  beginWave(){
+    this.wave++;
+    sv('sv-wave', this.wave);
+    this.waveQ = makeWave(this.wave);
+    this.wqIdx=0; this.wqElapsed=0; this.waveRunning=true;
+    const labels={5:'👔 First Manager incoming!',8:'🏢 CORPORATE BOSS approaching!',10:'🚨 FINAL WAVE — ALL HANDS!'};
+    this.annText = labels[this.wave] || `🌊 Wave ${this.wave}`;
+    this.annTimer=140;
+  },
+
+  // ── LOOP ─────────────────────────────────────────────────────
+  loop(){
+    if(!this.running) return;
+    this.frame++;
+
+    cx.clearRect(0,0,CW,CH);
+    this.drawBg();
+
+    // Passive anger decay (~2.5 anger/sec at 60fps)
+    if(this.anger>0 && !this.rageActive){
+      this.anger=Math.max(0,this.anger-0.042);
+      this.updateAnger();
+    }
+
+    // Rage overlay
+    if(this.rageActive){
+      this.rageTimer--;
+      if(this.rageTimer<=0) this.rageActive=false;
+      cx.save();
+      cx.globalAlpha=0.12+Math.sin(this.frame*0.5)*0.04;
+      cx.fillStyle='#e74c3c';
+      cx.fillRect(0,0,CW,CH);
+      cx.restore();
+    }
+
+    // Wave management
+    if(this.waveRunning){
+      this.wqElapsed++;
+      while(this.wqIdx<this.waveQ.length && this.waveQ[this.wqIdx].t<=this.wqElapsed*2){
+        this.spawnEnemy(this.waveQ[this.wqIdx].type);
+        this.wqIdx++;
+      }
+      if(this.wqIdx>=this.waveQ.length && this.enemies.length===0){
+        this.waveRunning=false;
+        if(this.wave>=10){ this.victory(); return; }
+        this.nextWaveTick=200;
+      }
+    } else {
+      if(this.nextWaveTick>0){
+        this.nextWaveTick--;
+        const s=Math.ceil(this.nextWaveTick/60);
+        if(s>0) this.drawCentreText(`Next wave in ${s}s… 🌊`, CW/2, CH-22, 13,'#666');
+      } else {
+        this.beginWave();
+      }
+    }
+
+    // Update enemies
+    for(const e of this.enemies) if(!e.dead) this.stepEnemy(e);
+    this.enemies = this.enemies.filter(e=>!e.dead);
+
+    // Update towers
+    for(const t of this.towers){
+      if(t.cd>0) t.cd--;
+      else { this.fireTower(t); t.cd=t.def.fr; }
+      if(t.fa>0) t.fa--;
+    }
+
+    // Update projectiles
+    for(const p of this.projs){
+      if(!p.tgt||p.tgt.dead){p.done=true;continue;}
+      const dx=p.tgt.x-p.x, dy=p.tgt.y-p.y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<p.spd+2){
+        this.hitEnemy(p.tgt, p.dmg, p.sp);
+        p.done=true;
+      } else {
+        p.x+=dx/d*p.spd; p.y+=dy/d*p.spd;
+      }
+    }
+    this.projs=this.projs.filter(p=>!p.done);
+
+    // Particles
+    for(const p of this.particles){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life--;}
+    this.particles=this.particles.filter(p=>p.life>0);
+    for(const f of this.floats){f.y-=0.9;f.life--;}
+    this.floats=this.floats.filter(f=>f.life>0);
+
+    // Draw
+    this.drawTowers();
+    this.drawEnemies();
+    this.drawProjs();
+    this.drawParticles();
+    this.drawFloats();
+    this.drawPreview();
+    this.drawAnnouncement();
+    this.drawMultiplier();
+
+    requestAnimationFrame(()=>G.loop());
+  },
+
+  // ── ENEMY LIFECYCLE ──────────────────────────────────────────
+  spawnEnemy(typeName){
+    const type=ET[typeName];
+    const label=type.texts[Math.floor(Math.random()*type.texts.length)];
+    const [sx,sy]=WPIX[0];
+    // Assign a label slot (0/1/2) cycling so nearby enemies stagger vertically
+    const slot=this.enemies.filter(e=>!e.dead).length % 3;
+    this.enemies.push({
+      x:sx-30, y:sy, type, maxHp:type.hp, hp:type.hp,
+      wi:1, label, slot, slowed:0, stunned:0, dead:false, bazos:false
+    });
+  },
+
+  pathProgress(e){
+    // Total distance travelled along path so we can compare enemies
+    let total=0;
+    for(let i=1;i<e.wi&&i<WPIX.length;i++){
+      const [x1,y1]=WPIX[i-1],[x2,y2]=WPIX[i];
+      total+=Math.hypot(x2-x1,y2-y1);
+    }
+    if(e.wi<WPIX.length){
+      const [tx,ty]=WPIX[e.wi];
+      const [px,py]=WPIX[Math.max(0,e.wi-1)];
+      total+=Math.hypot(tx-px,ty-py)-Math.hypot(tx-e.x,ty-e.y);
+    }
+    return total;
+  },
+
+  stepEnemy(e){
+    if(e.stunned>0){e.stunned--;return;}
+    let spd=e.slowed>0?e.type.spd*0.38:e.type.spd;
+    if(e.slowed>0) e.slowed--;
+
+    // Separation: slow down if too close to the enemy directly ahead
+    const MIN_SEP=38;
+    const myProg=this.pathProgress(e);
+    for(const o of this.enemies){
+      if(o===e||o.dead) continue;
+      const op=this.pathProgress(o);
+      if(op>myProg&&op-myProg<MIN_SEP){
+        // Gap too small — match the leader's speed or stop
+        spd=Math.min(spd, Math.max(0, op-myProg-4)*0.04);
+        break;
+      }
+    }
+
+    const wp=WPIX[e.wi];
+    if(!wp){this.hitStash(e);return;}
+    const dx=wp[0]-e.x, dy=wp[1]-e.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    if(d<spd+1){
+      e.wi++;
+      if(e.wi>=WPIX.length){this.hitStash(e);return;}
+    } else if(spd>0){
+      e.x+=dx/d*spd; e.y+=dy/d*spd;
+    }
+  },
+
+  hitStash(e){
+    e.dead=true;
+    if(e.type.dmg>0){
+      this.health=Math.max(0,this.health-e.type.dmg);
+      this.anger=Math.min(100,this.anger+e.type.ang*0.4);
+      sv('sv-health',this.health);
+      this.updateAnger();
+      this.spawnBurst(e.x,e.y,'💥',3);
+      if(this.health<=0){this.gameOver();return;}
+    }
+  },
+
+  killEnemy(e){
+    if(e.dead) return;
+    e.dead=true;
+    this.gold+=e.type.rwd;
+    this.anger=Math.min(100,this.anger+e.type.ang);
+    sv('sv-gold',this.gold);
+    this.updateAnger();
+    updateBtns();
+    this.spawnBurst(e.x,e.y,'💥',4);
+    this.float(e.x,e.y-24,`+${e.type.rwd}💰`,'#f1c40f');
+  },
+
+  hitEnemy(e, dmg, sp){
+    if(e.dead) return;
+    e.hp-=dmg;
+    this.float(e.x,e.y-e.type.sz/2,`-${Math.round(dmg)}`,'#ff6b6b');
+    if(sp==='slow') e.slowed=100;
+    if(sp==='stun' && e.type.id==='call') e.stunned=70;
+    if(e.hp<=0) this.killEnemy(e);
+  },
+
+  // ── TOWERS ───────────────────────────────────────────────────
+  fireTower(t){
+    const tx=t.col*CS+CS/2, ty=t.row*CS+CS/2;
+    const rng=t.def.rng*CS;
+
+    // Find furthest-progressed enemy in range
+    let best=null, bestProg=-1;
+    for(const e of this.enemies){
+      if(e.dead) continue;
+      const dx=e.x-tx, dy=e.y-ty;
+      if(Math.sqrt(dx*dx+dy*dy)>rng) continue;
+      const prog=e.wi+(e.wi<WPIX.length?
+        (1-Math.hypot(e.x-WPIX[e.wi][0],e.y-WPIX[e.wi][1])/200):1);
+      if(prog>bestProg){bestProg=prog;best=e;}
+    }
+    if(!best&&t.def.sp!=='bazos') return;
+
+    const sp=t.def.sp;
+    const am=this.angerMult();
+
+    if(sp==='aoe'){
+      for(const e of this.enemies){
+        if(e.dead) continue;
+        const dx=e.x-tx, dy=e.y-ty;
+        if(Math.sqrt(dx*dx+dy*dy)<=rng){
+          const d=t.def.dmg*am;
+          this.hitEnemy(e,d,'');
+        }
+      }
+      this.spawnBurst(tx,ty,'🏖️',2); t.fa=10; return;
+    }
+
+    if(sp==='random'){
+      this.fireInstagram(t,best,tx,ty,rng,am); return;
+    }
+
+    if(sp==='bazos'){
+      this.fireBazos(t,tx,ty,rng,am); return;
+    }
+
+    // Standard single-target shot
+    let dmg=t.def.dmg*am;
+    if(sp==='task2x'&&(best.type.id==='task'||best.type.id==='call')) dmg*=2;
+
+    const emap={coffee:'☕',sheet:'📄',mute:'🔇',ooo:'✉️'};
+    this.projs.push({x:tx,y:ty,tgt:best,emoji:emap[t.def.id]||'⚡',
+      dmg,spd:6,sp,done:false});
+    t.fa=10;
+  },
+
+  fireInstagram(t,tgt,tx,ty,rng,am){
+    if(!tgt) return;
+    const roll=Math.random();
+    if(roll<0.25){
+      // double damage
+      const d=t.def.dmg*am*2.2;
+      this.hitEnemy(tgt,d,'');
+      this.float(tgt.x,tgt.y-30,'VIRAL 🔥🔥','#e74c3c');
+    } else if(roll<0.45){
+      // slow everything in range
+      for(const e of this.enemies){
+        if(e.dead) continue;
+        const dx=e.x-tx, dy=e.y-ty;
+        if(Math.sqrt(dx*dx+dy*dy)<=rng) e.slowed=80;
+      }
+      this.float(tgt.x,tgt.y-30,'Reel loop 🔄','#C13584');
+    } else if(roll<0.55){
+      // enemy buff (bad!)
+      tgt.type={...tgt.type, spd:tgt.type.spd*1.6};
+      this.float(tgt.x,tgt.y-30,'Went Viral 📈 (bad)','#e74c3c');
+    } else if(roll<0.70){
+      // sponsored — earn gold
+      const g=12+Math.floor(Math.random()*10);
+      this.gold+=g; sv('sv-gold',this.gold); updateBtns();
+      this.float(tx,ty-30,`+${g}💰 #sponsored`,'#f1c40f');
+    } else if(roll<0.85){
+      // AoE chaos damage
+      for(const e of this.enemies){
+        if(e.dead) continue;
+        const dx=e.x-tx, dy=e.y-ty;
+        if(Math.sqrt(dx*dx+dy*dy)<=rng) this.hitEnemy(e,10*am,'');
+      }
+      this.float(tgt.x,tgt.y-30,'Drama 🎭','#C13584');
+    } else {
+      // nothing — loading spinner
+      this.float(tx,ty-30,'⏳ Loading…','#888');
+    }
+    t.fa=10;
+  },
+
+  fireBazos(t,tx,ty,rng,am){
+    let converted=false;
+    for(const e of this.enemies){
+      if(e.dead||e.bazos) continue;
+      const dx=e.x-tx, dy=e.y-ty;
+      if(Math.sqrt(dx*dx+dy*dy)>rng) continue;
+
+      if(e.type.id==='task'||e.type.id==='msg'){
+        // Convert to car ad
+        e.type=CAR_TYPE;
+        e.maxHp=CAR_TYPE.hp; e.hp=CAR_TYPE.hp;
+        e.label=CAR_TYPE.texts[Math.floor(Math.random()*CAR_TYPE.texts.length)];
+        e.bazos=true;
+        this.spawnBurst(e.x,e.y,'🚗',3);
+        converted=true;
+      } else if(e.type.id==='mgr'||e.type.id==='corp'){
+        e.slowed=160;
+        this.spawnBurst(e.x,e.y,'🛒',2);
+      }
+    }
+    if(converted){
+      this.health=Math.min(20,this.health+1);
+      sv('sv-health',this.health);
+      this.float(tx,ty-30,'+1 🔧 (sold on Bazoš!)','#2ecc71');
+    }
+    t.fa=10;
+  },
+
+  // ── DRAW ─────────────────────────────────────────────────────
+  drawBg(){
+    cx.fillStyle='#111128'; cx.fillRect(0,0,CW,CH);
+
+    // Subtle grid dots
+    cx.fillStyle='#1a1a35';
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(!PATH.has(`${c},${r}`)){
+        cx.fillRect(c*CS+CS/2-1,r*CS+CS/2-1,2,2);
+      }
+    }
+
+    // Path layers
+    const drawPath=(lw,col)=>{
+      cx.strokeStyle=col; cx.lineWidth=lw;
+      cx.lineCap='square'; cx.lineJoin='miter';
+      cx.beginPath();
+      WPIX.forEach(([x,y],i)=>i?cx.lineTo(x,y):cx.moveTo(x,y));
+      cx.stroke();
+    };
+    drawPath(CS-2,'#2a2a55');
+    drawPath(CS-8,'#1f1f45');
+    drawPath(CS-14,'#1a1a3c');
+    // Dashed path centre line
+    cx.setLineDash([8,10]); cx.strokeStyle='#2a2a5a'; cx.lineWidth=2;
+    cx.beginPath();
+    WPIX.forEach(([x,y],i)=>i?cx.lineTo(x,y):cx.moveTo(x,y));
+    cx.stroke();
+    cx.setLineDash([]);
+
+    // Stash
+    const sx=STASH_COL*CS+CS/2, sy=STASH_ROW*CS+CS/2;
+    cx.fillStyle='rgba(46,204,113,0.08)';
+    cx.fillRect((COLS-2)*CS+2,2*CS+2,2*CS-4,3*CS-4);
+    cx.strokeStyle='#2ecc71'; cx.lineWidth=1.5;
+    cx.strokeRect((COLS-2)*CS+2,2*CS+2,2*CS-4,3*CS-4);
+    this.emoji('🖥️',sx+2,sy-4,30);
+    this.emoji('📱',sx-14,sy+18,18);
+    this.emoji('💻',sx+16,sy+16,18);
+    this.emoji('🔋',sx+2,sy+20,14);
+
+    // Ales character (guarding stash)
+    const ax=(COLS-3)*CS+CS/2, ay=STASH_ROW*CS+CS/2;
+    const face=this.anger>80?'🤬':this.anger>55?'😤':this.anger>25?'😠':'🧑‍💼';
+    this.emoji(face,ax,ay,34);
+    // Ales name tag
+    cx.fillStyle='rgba(0,0,0,0.6)';
+    cx.fillRect(ax-20,ay+20,40,13);
+    cx.fillStyle='#ccc'; cx.font='bold 9px Segoe UI';
+    cx.textAlign='center'; cx.textBaseline='top';
+    cx.fillText('Ales',ax,ay+22);
+  },
+
+  drawTowers(){
+    for(const t of this.towers){
+      const x=t.col*CS+CS/2, y=t.row*CS+CS/2;
+      cx.fillStyle=t.def.col+'33';
+      roundRect(t.col*CS+3,t.row*CS+3,CS-6,CS-6,4);
+      cx.fill();
+      cx.strokeStyle=t.def.col; cx.lineWidth=1.5;
+      roundRect(t.col*CS+3,t.row*CS+3,CS-6,CS-6,4);
+      cx.stroke();
+      this.emoji(t.def.emoji,x,y,26);
+      // Firing flash
+      if(t.fa>0){
+        cx.strokeStyle='rgba(255,255,255,'+(t.fa/10)+')';
+        cx.lineWidth=2;
+        cx.beginPath(); cx.arc(x,y,CS*0.55,0,Math.PI*2); cx.stroke();
+      }
+    }
+  },
+
+  drawEnemies(){
+    // Two passes: bodies first, then labels on top so they never hide each other
+    for(const e of this.enemies){
+      if(e.dead) continue;
+      const{x,y}=e, sz=e.type.sz;
+      // Shadow
+      cx.fillStyle='rgba(0,0,0,0.3)';
+      cx.beginPath(); cx.ellipse(x,y+sz/2+3,sz/2*0.9,sz/6,0,0,Math.PI*2); cx.fill();
+      // Slow tint
+      if(e.slowed>0){
+        cx.fillStyle='rgba(100,200,255,0.22)';
+        cx.beginPath(); cx.arc(x,y,sz/2+6,0,Math.PI*2); cx.fill();
+      }
+      // Stun stars
+      if(e.stunned>0) this.emoji('⭐',x+sz/2+2,y-sz/2,12);
+      // Emoji body
+      this.emoji(e.type.emoji,x,y,sz);
+      // Tier badge for managers/bosses
+      if(e.type.tier>=3){
+        const btext=e.type.tier===4?'BOSS':'MGR';
+        cx.fillStyle=e.type.col;
+        roundRect(x+sz/2-10,y-sz/2-8,20,11,3); cx.fill();
+        cx.fillStyle='white'; cx.font='bold 7px Segoe UI';
+        cx.textAlign='center'; cx.textBaseline='middle';
+        cx.fillText(btext,x+sz/2,y-sz/2-2);
+      }
+      // HP bar (just above the emoji)
+      const bw=Math.max(sz+8,40), bh=5, bx=x-bw/2, by=y-sz/2-8;
+      cx.fillStyle='#111'; cx.fillRect(bx-1,by-1,bw+2,bh+2);
+      cx.fillStyle='#333'; cx.fillRect(bx,by,bw,bh);
+      const hp=e.hp/e.maxHp;
+      cx.fillStyle=hp>0.5?'#2ecc71':hp>0.25?'#f39c12':'#e74c3c';
+      cx.fillRect(bx,by,bw*Math.max(0,hp),bh);
+    }
+
+    // Second pass: speech-bubble labels, staggered by slot so they don't overlap
+    for(const e of this.enemies){
+      if(e.dead||!e.label) continue;
+      const{x,y}=e, sz=e.type.sz;
+      // slot 0 = close above, 1 = mid, 2 = high — keeps nearby enemies readable
+      const slotOffset=e.slot*22;
+      const bubbleY=y-sz/2-18-slotOffset;
+
+      cx.save();
+      cx.font='bold 10px Segoe UI';
+      const tw=cx.measureText(e.label).width;
+      const pad=6, bh=16, bw=tw+pad*2;
+      const bx=Math.max(4,Math.min(CW-bw-4, x-bw/2));
+      const by=Math.max(4, bubbleY-bh/2);
+
+      // Bubble background
+      cx.fillStyle='rgba(15,15,40,0.88)';
+      roundRect(bx,by,bw,bh,4); cx.fill();
+      // Coloured left stripe matching enemy tier colour
+      cx.fillStyle=e.type.col;
+      roundRect(bx,by,3,bh,2); cx.fill();
+      // Tail pointing down to enemy
+      const tailX=Math.max(bx+8,Math.min(bx+bw-8, x));
+      cx.fillStyle='rgba(15,15,40,0.88)';
+      cx.beginPath();
+      cx.moveTo(tailX-4,by+bh);
+      cx.lineTo(tailX+4,by+bh);
+      cx.lineTo(tailX,by+bh+6);
+      cx.closePath(); cx.fill();
+      // Text
+      cx.fillStyle='#eee';
+      cx.textAlign='left'; cx.textBaseline='middle';
+      cx.fillText(e.label,bx+pad,by+bh/2);
+      cx.restore();
+    }
+  },
+
+  drawProjs(){
+    for(const p of this.projs){
+      this.emoji(p.emoji,p.x,p.y,16);
+    }
+  },
+
+  drawParticles(){
+    for(const p of this.particles){
+      cx.save(); cx.globalAlpha=p.life/p.maxLife;
+      this.emoji(p.emoji,p.x,p.y,p.sz);
+      cx.restore();
+    }
+  },
+
+  drawFloats(){
+    for(const f of this.floats){
+      cx.save(); cx.globalAlpha=f.life/f.maxLife;
+      cx.font='bold 12px Segoe UI'; cx.fillStyle=f.col||'white';
+      cx.textAlign='center'; cx.textBaseline='middle';
+      cx.fillText(f.txt,f.x,f.y);
+      cx.restore();
+    }
+  },
+
+  drawPreview(){
+    if(!this.selTower||this.mCol<0||this.mRow<0) return;
+    if(this.mCol>=COLS||this.mRow>=ROWS) return;
+    const isPath=PATH.has(`${this.mCol},${this.mRow}`);
+    const hasTow=this.towers.some(t=>t.col===this.mCol&&t.row===this.mRow);
+    const ok=!isPath&&!hasTow;
+    const afford=this.gold>=this.selTower.cost;
+    cx.fillStyle=ok&&afford?'rgba(46,204,113,0.28)':'rgba(231,76,60,0.28)';
+    cx.fillRect(this.mCol*CS+1,this.mRow*CS+1,CS-2,CS-2);
+    if(ok){
+      cx.strokeStyle=afford?'rgba(46,204,113,0.5)':'rgba(231,76,60,0.4)';
+      cx.lineWidth=1; cx.setLineDash([4,4]);
+      cx.beginPath();
+      cx.arc(this.mCol*CS+CS/2,this.mRow*CS+CS/2,this.selTower.rng*CS,0,Math.PI*2);
+      cx.stroke(); cx.setLineDash([]);
+      this.emoji(this.selTower.emoji,this.mCol*CS+CS/2,this.mRow*CS+CS/2,26);
+    }
+  },
+
+  drawAnnouncement(){
+    if(this.annTimer<=0) return;
+    const a=Math.min(1,this.annTimer/25);
+    cx.save(); cx.globalAlpha=a;
+    cx.fillStyle='rgba(0,0,0,0.65)';
+    roundRect(CW/2-220,CH/2-30,440,60,8); cx.fill();
+    cx.font='bold 26px Segoe UI'; cx.fillStyle='#f1c40f';
+    cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText(this.annText,CW/2,CH/2);
+    cx.restore();
+    this.annTimer--;
+  },
+
+  drawMultiplier(){
+    const m=this.angerMult();
+    if(m<=1.05) return;
+    cx.font='bold 13px Segoe UI';
+    cx.fillStyle= m>2?'#e74c3c':m>1.5?'#f39c12':'#f1c40f';
+    cx.textAlign='right'; cx.textBaseline='top';
+    cx.fillText(`⚡ ${m.toFixed(2)}× damage`,CW-8,6);
+  },
+
+  drawCentreText(txt,x,y,sz,col){
+    cx.save(); cx.font=`bold ${sz}px Segoe UI`;
+    cx.fillStyle=col||'white'; cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText(txt,x,y); cx.restore();
+  },
+
+  // ── HELPERS ──────────────────────────────────────────────────
+  emoji(e,x,y,sz){
+    cx.save(); cx.font=`${sz}px serif`;
+    cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText(e,x,y); cx.restore();
+  },
+
+  float(x,y,txt,col='#fff'){
+    this.floats.push({x,y,txt,col,life:55,maxLife:55});
+  },
+
+  spawnBurst(x,y,emoji,n){
+    for(let i=0;i<n;i++){
+      this.particles.push({
+        x,y,
+        vx:(Math.random()-0.5)*4,
+        vy:(Math.random()-0.5)*4-1.5,
+        emoji, sz:14+Math.random()*10,
+        life:30+Math.random()*20, maxLife:50
+      });
+    }
+  },
+
+  // ── END STATES ───────────────────────────────────────────────
+  gameOver(){
+    this.running=false;
+    showOverlay(
+      '💀','Stash Destroyed!','#e74c3c',
+      "The corporate chaos overwhelmed Ales. His precious hardware is gone… probably logged as 'project assets' in PEACE.",
+      'red','🔄 Try Again'
+    );
+  },
+
+  victory(){
+    this.running=false;
+    showOverlay(
+      '🏆','Ales Prevails!','#f1c40f',
+      "Against all corporate odds — meetings, managers, Volkswagen, even Microsoft — Ales defended every last phone and laptop. Legend. 😤",
+      '','🎮 Play Again'
+    );
+  },
+
+  // ── INPUT ────────────────────────────────────────────────────
+  click(col,row){
+    if(!this.running||!this.selTower) return;
+    if(col<0||col>=COLS||row<0||row>=ROWS) return;
+    if(PATH.has(`${col},${row}`)) return;
+    if(this.towers.some(t=>t.col===col&&t.row===row)) return;
+    if(this.gold<this.selTower.cost) return;
+    this.gold-=this.selTower.cost;
+    sv('sv-gold',this.gold);
+    updateBtns();
+    this.towers.push({col,row,def:this.selTower,cd:0,fa:0});
+    this.selTower=null;
+    document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
+  }
+};
+
+// ─── UTILITIES ────────────────────────────────────────────────
+const id=s=>document.getElementById(s);
+const sv=(s,v)=>{ const el=id(s); if(el) el.textContent=v; };
+
+function roundRect(x,y,w,h,r){
+  cx.beginPath();
+  cx.moveTo(x+r,y); cx.lineTo(x+w-r,y);
+  cx.quadraticCurveTo(x+w,y,x+w,y+r);
+  cx.lineTo(x+w,y+h-r);
+  cx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  cx.lineTo(x+r,y+h);
+  cx.quadraticCurveTo(x,y+h,x,y+h-r);
+  cx.lineTo(x,y+r);
+  cx.quadraticCurveTo(x,y,x+r,y);
+  cx.closePath();
+}
+
+function showOverlay(icon,title,titleCol,body,btnCls,btnTxt){
+  const ov=id('overlay');
+  ov.innerHTML=`
+    <div style="font-size:64px">${icon}</div>
+    <h1 style="color:${titleCol||'white'}">${title}</h1>
+    <p>${body}</p>
+    <button class="obtn ${btnCls}" onclick="G.reset()">${btnTxt}</button>
+  `;
+  ov.style.display='flex';
+}
+
+// ─── TOWER PANEL ──────────────────────────────────────────────
+function buildPanel(){
+  const bar=id('bottombar');
+  bar.innerHTML='<span class="barlabel">🏗️ Build:</span>';
+  TD.forEach(def=>{
+    const b=document.createElement('div');
+    b.className='tbtn'; b.dataset.cost=def.cost; b.dataset.id=def.id;
+    b.title=def.tip;
+    b.innerHTML=`<div class="te">${def.emoji}</div><div class="tn">${def.name}</div><div class="tc">💰${def.cost}</div>`;
+    b.onclick=()=>{
+      if(G.gold<def.cost) return;
+      G.selTower=def;
+      document.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+    bar.appendChild(b);
+  });
+  const hint=document.createElement('span');
+  hint.className='hint';
+  hint.innerHTML='Left-click: place &nbsp;|&nbsp; Right-click: cancel';
+  bar.appendChild(hint);
+  updateBtns();
+}
+
+function updateBtns(){
+  document.querySelectorAll('.tbtn').forEach(b=>{
+    const cost=parseInt(b.dataset.cost);
+    b.classList.toggle('rich',G.gold>=cost);
+    b.classList.toggle('poor',G.gold<cost);
+  });
+}
+
+// ─── CANVAS INPUT ─────────────────────────────────────────────
+cv.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect();
+  G.mCol=Math.floor((e.clientX-r.left)/CS);
+  G.mRow=Math.floor((e.clientY-r.top)/CS);
+});
+cv.addEventListener('mouseleave',()=>{G.mCol=-1;G.mRow=-1;});
+cv.addEventListener('click',e=>{
+  const r=cv.getBoundingClientRect();
+  G.click(Math.floor((e.clientX-r.left)/CS),Math.floor((e.clientY-r.top)/CS));
+});
+cv.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  G.selTower=null;
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
+});
+
+// ─── BOOT ─────────────────────────────────────────────────────
+buildPanel();
+</script>
+</body>
+</html>
