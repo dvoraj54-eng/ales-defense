@@ -131,6 +131,59 @@ canvas {
   font-size:12px; color:#ccc; text-align:left;
 }
 .tip b { color:#f1c40f; }
+
+#manual {
+  position:absolute; top:0; left:0; width:920px; height:598px;
+  background: rgba(5,5,20,0.97);
+  display:none; flex-direction:column;
+  border-radius:4px; z-index:11;
+  overflow:hidden;
+}
+#manual-header {
+  padding: 14px 20px 0;
+  display:flex; align-items:center; gap:12px; flex-shrink:0;
+}
+#manual-header h2 { font-size:22px; flex:1; }
+.mtab {
+  background:#1a1a35; border:2px solid #333366;
+  border-radius:6px; padding:6px 16px;
+  color:#aaa; font-size:13px; font-weight:bold; cursor:pointer;
+}
+.mtab.active { border-color:#f1c40f; color:#f1c40f; background:#1a1a20; }
+.mbtn-back {
+  background:#2a1a1a; border:2px solid #663333;
+  border-radius:6px; padding:6px 14px;
+  color:white; font-size:13px; font-weight:bold; cursor:pointer;
+}
+.mbtn-back:hover { border-color:#994444; }
+#manual-body {
+  flex:1; overflow-y:auto; padding:14px 20px 20px;
+}
+.manual-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.mcard {
+  background:#111130; border:1px solid #2a2a55;
+  border-radius:8px; padding:10px 12px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.mcard-head { display:flex; align-items:center; gap:8px; }
+.mcard-emoji { font-size:28px; line-height:1; }
+.mcard-name { font-size:14px; font-weight:bold; }
+.mcard-sub { font-size:11px; color:#888; }
+.mcard-stats { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+.mstat {
+  background:#1a1a40; border-radius:4px;
+  padding:2px 7px; font-size:11px; color:#ccc;
+}
+.mstat b { color:#f1c40f; }
+.mcard-desc { font-size:11px; color:#7a7ab8; margin-top:2px; font-style:italic; }
+.mcard.tier1 { border-color:#6264A7; }
+.mcard.tier2 { border-color:#0078D4; }
+.mcard.tier3 { border-color:#8E44AD; }
+.mcard.tier4 { border-color:#e74c3c; }
+.mcard.tower  { border-color:#2ecc71; }
 </style>
 </head>
 <body>
@@ -199,10 +252,24 @@ canvas {
     <div class="tip-grid">
       <div class="tip"><b>😤 Anger bar</b> fills as enemies hit. More anger = more damage for ALL towers.</div>
       <div class="tip"><b>😡 RAGE MODE</b> unlocks at 100% anger — triggers a devastating AoE shout.</div>
-      <div class="tip"><b>🛒 Bazoš.cz</b> converts Tasks into Czech car ads, healing Ales. Most powerful tower.</div>
-      <div class="tip"><b>📸 Instagram</b> has completely unpredictable effects. Czech Republic's finest chaos.</div>
+      <div class="tip"><b>🛒 Bazoš.cz</b> converts Tasks into Czech car ads that heal Ales's stash!</div>
+      <div class="tip"><b>👨‍💼 Delegation</b> assigns a team member to handle enemies. +2× vs Tasks & Calls.</div>
     </div>
-    <button class="obtn" onclick="G.start()">🎮 Start Defending!</button>
+    <div style="display:flex;gap:12px;margin-top:4px;">
+      <button class="obtn" onclick="G.start()">🎮 Start Defending!</button>
+      <button class="obtn" style="background:#1a3a6a;font-size:15px;padding:12px 24px;" onclick="showManual()">📖 Manual</button>
+    </div>
+  </div>
+
+  <!-- MANUAL -->
+  <div id="manual">
+    <div id="manual-header">
+      <h2>📖 Manual</h2>
+      <button class="mtab active" id="tab-btn-towers" onclick="switchTab('towers')">🏗️ Towers</button>
+      <button class="mtab" id="tab-btn-enemies" onclick="switchTab('enemies')">👾 Enemies</button>
+      <button class="mbtn-back" onclick="closeManual()">← Back to Menu</button>
+    </div>
+    <div id="manual-body"></div>
   </div>
 
 </div>
@@ -365,13 +432,15 @@ const CAR_TYPE = {
 
 // ─── TOWER DEFS ───────────────────────────────────────────────
 const TD = [
-  {id:'coffee',  name:'Coffee Machine', emoji:'☕',  cost:50,  rng:2.8, dmg:9,  fr:55,  col:'#6F4E37', sp:'slow',     tip:'Slows all enemies'},
-  {id:'sheet',   name:'Spreadsheet',    emoji:'📊',  cost:75,  rng:2.4, dmg:22, fr:42,  col:'#217346', sp:'task2x',   tip:'+2× dmg vs Tasks & Calls'},
-  {id:'mute',    name:'Mute Button',    emoji:'🔇',  cost:65,  rng:3.0, dmg:11, fr:88,  col:'#C0392B', sp:'stun',     tip:'Stuns Calls; normal dmg others'},
-  {id:'ooo',     name:'Out of Office',  emoji:'🏖️', cost:80,  rng:2.6, dmg:6,  fr:110, col:'#F39C12', sp:'aoe',      tip:'AoE damage burst in range'},
-  {id:'insta',   name:'Instagram',      emoji:'📸',  cost:55,  rng:3.4, dmg:0,  fr:58,  col:'#C13584', sp:'random',   tip:'🎲 Complete randomness'},
-  {id:'bazos',   name:'Bazoš.cz',       emoji:'🛒',  cost:200, rng:4.2, dmg:14, fr:140, col:'#E67E22', sp:'bazos',    tip:'Converts tasks→car ads (+heal), slows bosses'},
+  {id:'coffee',     name:'Coffee Machine', emoji:'☕',  cost:50,  rng:2.8, dmg:9,  fr:55,  col:'#6F4E37', sp:'slow',     tip:'Slows all enemies'},
+  {id:'delegation', name:'Delegation',     emoji:'👨‍💼', cost:90,  rng:2.4, dmg:22, fr:42,  col:'#217346', sp:'task2x',   tip:'+2× dmg vs Tasks & Calls. Named after a team member!'},
+  {id:'mute',       name:'Mute Button',    emoji:'🔇',  cost:65,  rng:3.0, dmg:11, fr:88,  col:'#C0392B', sp:'stun',     tip:'Stuns Calls; normal dmg others'},
+  {id:'ooo',        name:'Out of Office',  emoji:'🏖️', cost:80,  rng:2.6, dmg:6,  fr:110, col:'#F39C12', sp:'aoe',      tip:'AoE damage burst in range'},
+  {id:'insta',      name:'Instagram',      emoji:'📸',  cost:55,  rng:3.4, dmg:0,  fr:58,  col:'#C13584', sp:'random',   tip:'🎲 Complete randomness'},
+  {id:'bazos',      name:'Bazoš.cz',       emoji:'🛒',  cost:200, rng:4.2, dmg:14, fr:140, col:'#E67E22', sp:'bazos',    tip:'Converts tasks→car ads (+heal), slows bosses'},
 ];
+
+const TEAM = ['Dan Šafář','Tomáš Novák','Tomáš Vančat','Vlado Malík','Standa Kozák','Kuba Tomášek','Dan Martínek','Radek Svoboda'];
 
 // ─── WAVE RECIPES ─────────────────────────────────────────────
 function makeWave(n){
@@ -520,6 +589,7 @@ const G = {
     // AoE damage to all enemies
     const dmg = 100 * this.angerMult();
     for(const e of this.enemies){
+      if(e.type.id==='car') continue;
       e.hp -= dmg;
       this.float(e.x, e.y-20, `😡 ${Math.round(dmg)}!`, '#e74c3c');
       if(e.hp<=0) this.killEnemy(e);
@@ -609,6 +679,7 @@ const G = {
       const d=Math.sqrt(dx*dx+dy*dy);
       if(d<p.spd+2){
         this.hitEnemy(p.tgt, p.dmg, p.sp);
+        if(p.member) this.float(p.tgt.x, p.tgt.y-40, `${p.member.split(' ')[0]}'s on it!`, '#aaffaa');
         p.done=true;
       } else {
         p.x+=dx/d*p.spd; p.y+=dy/d*p.spd;
@@ -725,7 +796,7 @@ const G = {
   },
 
   hitEnemy(e, dmg, sp){
-    if(e.dead) return;
+    if(e.dead||e.type.id==='car') return;
     e.hp-=dmg;
     this.float(e.x,e.y-e.type.sz/2,`-${Math.round(dmg)}`,'#ff6b6b');
     if(sp==='slow') e.slowed=100;
@@ -777,9 +848,9 @@ const G = {
     let dmg=t.def.dmg*am;
     if(sp==='task2x'&&(best.type.id==='task'||best.type.id==='call')) dmg*=2;
 
-    const emap={coffee:'☕',sheet:'📄',mute:'🔇',ooo:'✉️'};
+    const emap={coffee:'☕',delegation:'📋',mute:'🔇',ooo:'✉️'};
     this.projs.push({x:tx,y:ty,tgt:best,emoji:emap[t.def.id]||'⚡',
-      dmg,spd:6,sp,done:false});
+      dmg,spd:6,sp,done:false,member:t.member||null});
     t.fa=10;
   },
 
@@ -913,7 +984,16 @@ const G = {
       cx.strokeStyle=t.def.col; cx.lineWidth=1.5;
       roundRect(t.col*CS+3,t.row*CS+3,CS-6,CS-6,4);
       cx.stroke();
-      this.emoji(t.def.emoji,x,y,26);
+      // Delegation towers show smaller emoji + first name
+      if(t.def.id==='delegation'&&t.member){
+        this.emoji('👨‍💼',x,y-6,20);
+        const first=t.member.split(' ')[0];
+        cx.fillStyle='#aaffaa'; cx.font='bold 7px Segoe UI';
+        cx.textAlign='center'; cx.textBaseline='top';
+        cx.fillText(first,x,y+8);
+      } else {
+        this.emoji(t.def.emoji,x,y,26);
+      }
       // Firing flash
       if(t.fa>0){
         cx.strokeStyle='rgba(255,255,255,'+(t.fa/10)+')';
@@ -1118,7 +1198,15 @@ const G = {
     this.gold-=this.selTower.cost;
     sv('sv-gold',this.gold);
     updateBtns();
-    this.towers.push({col,row,def:this.selTower,cd:0,fa:0});
+    // Assign a team member name for delegation towers
+    let member=null;
+    if(this.selTower.id==='delegation'){
+      const used=this.towers.filter(t=>t.def.id==='delegation').map(t=>t.member);
+      const free=TEAM.filter(n=>!used.includes(n));
+      member=free.length>0 ? free[Math.floor(Math.random()*free.length)]
+                           : TEAM[Math.floor(Math.random()*TEAM.length)];
+    }
+    this.towers.push({col,row,def:this.selTower,cd:0,fa:0,member});
     this.selTower=null;
     document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));
   }
@@ -1150,6 +1238,70 @@ function showOverlay(icon,title,titleCol,body,btnCls,btnTxt){
     <button class="obtn ${btnCls}" onclick="G.reset()">${btnTxt}</button>
   `;
   ov.style.display='flex';
+}
+
+// ─── MANUAL ───────────────────────────────────────────────────
+let manualTab = 'towers';
+
+function showManual(){
+  id('overlay').style.display='none';
+  const m=id('manual');
+  m.style.display='flex';
+  renderManual();
+}
+
+function closeManual(){
+  id('manual').style.display='none';
+  id('overlay').style.display='flex';
+}
+
+function switchTab(tab){
+  manualTab=tab;
+  id('tab-btn-towers').classList.toggle('active', tab==='towers');
+  id('tab-btn-enemies').classList.toggle('active', tab==='enemies');
+  renderManual();
+}
+
+function renderManual(){
+  const body=id('manual-body');
+  if(manualTab==='towers'){
+    body.innerHTML='<div class="manual-grid">'+TD.map(t=>`
+      <div class="mcard tower">
+        <div class="mcard-head">
+          <span class="mcard-emoji">${t.emoji}</span>
+          <div>
+            <div class="mcard-name">${t.name}</div>
+            <div class="mcard-sub">${t.tip}</div>
+          </div>
+        </div>
+        <div class="mcard-stats">
+          <span class="mstat">💰 Cost: <b>${t.cost}</b></span>
+          <span class="mstat">⚔️ Damage: <b>${t.dmg}</b></span>
+          <span class="mstat">📡 Range: <b>${t.rng} tiles</b></span>
+          <span class="mstat">⚡ Fire rate: <b>${Math.round(60/t.fr*10)/10}/s</b></span>
+        </div>
+      </div>`).join('')+'</div>';
+  } else {
+    const enemies=[ET.msg, ET.call, ET.task, ET.areamgr, ET.chapermgr, ET.corp, CAR_TYPE];
+    const tierLabel={0:'Friendly',1:'Tier 1',2:'Tier 2',3:'Tier 3',4:'Boss'};
+    body.innerHTML='<div class="manual-grid">'+enemies.map(e=>`
+      <div class="mcard tier${e.tier}">
+        <div class="mcard-head">
+          <span class="mcard-emoji">${e.emoji}</span>
+          <div>
+            <div class="mcard-name">${e.name}</div>
+            <div class="mcard-sub">${tierLabel[e.tier]||''}${e.id==='car'?' — walks to stash, heals +1 🔧':''}</div>
+          </div>
+        </div>
+        <div class="mcard-stats">
+          <span class="mstat">❤️ HP: <b>${e.id==='car'?'∞':e.hp}</b></span>
+          <span class="mstat">💨 Speed: <b>${e.spd}</b></span>
+          ${e.dmg>0?`<span class="mstat">💥 Stash dmg: <b>${e.dmg}</b></span>`:''}
+          ${e.ang>0?`<span class="mstat">😤 Anger: <b>+${e.ang}</b></span>`:''}
+          <span class="mstat">💰 Reward: <b>${e.rwd}</b></span>
+        </div>
+      </div>`).join('')+'</div>';
+  }
 }
 
 // ─── TOWER PANEL ──────────────────────────────────────────────
