@@ -460,12 +460,6 @@ const G = {
     cx.clearRect(0,0,CW,CH);
     this.drawBg();
 
-    // Passive anger decay (~2.5 anger/sec at 60fps)
-    if(this.anger>0 && !this.rageActive){
-      this.anger=Math.max(0,this.anger-0.042);
-      this.updateAnger();
-    }
-
     // Rage overlay
     if(this.rageActive){
       this.rageTimer--;
@@ -613,7 +607,7 @@ const G = {
     }
     if(e.type.dmg>0){
       this.health=Math.max(0,this.health-e.type.dmg);
-      this.anger=Math.min(100,this.anger+e.type.ang*0.4);
+      this.anger=Math.min(100,this.anger+e.type.ang);
       sv('sv-health',this.health);
       this.updateAnger();
       this.spawnBurst(e.x,e.y,'💥',3);
@@ -625,7 +619,6 @@ const G = {
     if(e.dead) return;
     e.dead=true;
     this.gold+=e.type.rwd;
-    this.anger=Math.min(100,this.anger+e.type.ang);
     sv('sv-gold',this.gold);
     this.updateAnger();
     updateBtns();
