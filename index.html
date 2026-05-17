@@ -569,6 +569,13 @@ const G = {
     this.paused=false;
     id('pause-btn').textContent='⏸ Pause';
     id('pause-btn').classList.remove('paused');
+    // Clear canvas so no mid-game state bleeds through the overlay
+    cx.clearRect(0,0,CW,CH);
+    cx.fillStyle='#111128';
+    cx.fillRect(0,0,CW,CH);
+    // Reset UI values
+    this.health=20; this.gold=100; this.anger=0; this.wave=0;
+    this.ui();
     // Restore the original start overlay
     const ov=id('overlay');
     ov.innerHTML=`
@@ -581,9 +588,12 @@ const G = {
         <div class="tip"><b>😤 Anger bar</b> fills as enemies hit. More anger = more damage for ALL towers.</div>
         <div class="tip"><b>😡 RAGE MODE</b> unlocks at 100% anger — triggers a devastating AoE shout.</div>
         <div class="tip"><b>🛒 Bazoš.cz</b> converts Tasks into Czech car ads that walk to the stash and heal Ales!</div>
-        <div class="tip"><b>📸 Instagram</b> has completely unpredictable effects. Czech Republic's finest chaos.</div>
+        <div class="tip"><b>👨‍💼 Delegation</b> assigns a team member to handle enemies. +2× vs Tasks & Calls.</div>
       </div>
-      <button class="obtn" onclick="G.start()">🎮 Start Defending!</button>
+      <div style="display:flex;gap:12px;margin-top:4px;">
+        <button class="obtn" onclick="G.start()">🎮 Start Defending!</button>
+        <button class="obtn" style="background:#1a3a6a;font-size:15px;padding:12px 24px;" onclick="showManual()">📖 Manual</button>
+      </div>
     `;
     ov.style.display='flex';
   },
