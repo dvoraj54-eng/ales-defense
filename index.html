@@ -234,31 +234,94 @@ const ET = {
     id:'msg', name:'Teams Message', emoji:'💬',
     hp:30, spd:0.82, dmg:1, ang:6, rwd:8, sz:26, tier:1,
     col:'#6264A7',
-    texts:["do you have a minute? 😊","don't forget the invoicing!","still missing CTS results","could you explain your test reporting?","quick question about the project 🙂","reminder: submit your timesheet","just a quick update needed 👍"]
+    texts:[
+      "do you have a minute? 😊",
+      "don't forget the invoicing!",
+      "still missing CTS results",
+      "could you explain your test reporting?",
+      "quick question about the project 🙂",
+      "reminder: submit your timesheet",
+      "just a quick update needed 👍",
+      "can I borrow a CANoe license?",
+      "do you have a spare Frame Grabber?",
+      "could you help me with PEACE?",
+      "do you have a spare keyboard?",
+      "can I borrow your USB hub?",
+      "is there a free monitor in storage?",
+      "do we have any spare mice?",
+      "can I get a docking station?",
+      "is there a spare ethernet cable?",
+      "do you have a power strip I can use?",
+      "can I borrow a webcam for home office?",
+      "do you have an extra HDMI cable?",
+      "can I use your SIM card reader?"
+    ]
   },
   call:{
     id:'call', name:'Teams Call', emoji:'📞',
     hp:90, spd:0.55, dmg:4, ang:15, rwd:20, sz:36, tier:2,
     col:'#0078D4',
-    texts:['Ares Pulse','Result Review with Škoda','Sprint Planning','Daily Meeting','Sync call (15 min, promise!)','Retrospective (2h)']
+    texts:[
+      'Ares Pulse',
+      'Result Review with Škoda',
+      'Sprint Planning',
+      'Daily Meeting',
+      'Sync call (15 min, promise!)',
+      'Retrospective (2h)',
+      'Thom Geiger wants to talk about GDA',
+      'Petr Studík added you to CARIAD India CTS sync',
+      'Chapter Pulse',
+      'Míša: you forgot to buy dog food 🐕'
+    ]
   },
   task:{
     id:'task', name:'Task', emoji:'📋',
     hp:75, spd:0.50, dmg:5, ang:20, rwd:20, sz:34, tier:2,
     col:'#E07020',
-    texts:['Invoicing','Project Report','Storage Organisation','PEACE System','Shopping for his wife 😅','1:1 with Manager','AI Training','Workplace Safety Training','Windows Update','CTS Results Deadline']
+    texts:[
+      'Invoicing',
+      'Project Report',
+      'Storage Organisation',
+      'PEACE System',
+      '1:1 with Manager',
+      'AI Training',
+      'Workplace Safety Training',
+      'Windows Update',
+      'CTS Results Deadline',
+      'CAS Planning',
+      'Automation Demo'
+    ]
   },
-  mgr:{
-    id:'mgr', name:'Manager', emoji:'👔',
+  areamgr:{
+    id:'areamgr', name:'Area Manager', emoji:'👔',
     hp:280, spd:0.34, dmg:10, ang:25, rwd:50, sz:42, tier:3,
     col:'#8E44AD',
-    texts:['Area Manager','Chapter Manager','Head of Department','CEO']
+    texts:[
+      'Can you help me with tender calculation?',
+      'Please do the finances for WP1',
+      'Can you go with me to Germany next week?',
+      'I need you to order a new test bench',
+      'We need you to do offshoring for CTS'
+    ]
+  },
+  chapermgr:{
+    id:'chapermgr', name:'Chapter Manager', emoji:'🧑‍💼',
+    hp:280, spd:0.34, dmg:10, ang:25, rwd:50, sz:42, tier:3,
+    col:'#6C3483',
+    texts:[
+      'Do you really need Tomáš Novák for 50%?',
+      'Dan Šafář will move from CAS to GDA next month',
+      'Tomáš Novák will have to leave your project',
+      'How many hours did Martin do last week?',
+      'Have you filled the allocation table?',
+      'Can you present on Chapter Pulse?'
+    ]
   },
   corp:{
     id:'corp', name:'Corporate Boss', emoji:'🏢',
     hp:850, spd:0.20, dmg:25, ang:40, rwd:120, sz:52, tier:4,
     col:'#2C3E50',
-    texts:['Volkswagen','Škoda','Cariad','Alten','Embitel','Microsoft','AI (General) 🤖']
+    texts:['Volkswagen','Škoda','Cariad','Alten','Embitel','Microsoft']
   }
 };
 
@@ -266,7 +329,38 @@ const CAR_TYPE = {
   id:'car', name:'Car Ad', emoji:'🚗',
   hp:14, spd:1.6, dmg:0, ang:0, rwd:3, sz:28, tier:0,
   col:'#27AE60',
-  texts:['Škoda Octavia 2008, 120k km','BMW 3er diesel, dobrý stav','Ford Focus 1.6 TDCi','VW Golf IV, málo km, nekuřák','Seat Leon 2010, nová STK']
+  texts:[
+    'Škoda Octavia 2008, 123k km, nová STK',
+    'VW Golf IV 1.9 TDI, 186k km, nekuřák',
+    'BMW 3er E46 diesel, dobrý stav',
+    'Ford Focus 1.6 TDCi 2007, po servisu',
+    'Seat Leon 2010, 95k km, 1 majitel',
+    'Škoda Fabia 2012, benzín, garáž',
+    'Opel Astra 2006, klima, nová STK',
+    'Renault Megane 2009, 110k km',
+    'Peugeot 307 2.0 HDI, levný provoz',
+    'Toyota Corolla 2005, bezproblémový',
+    'Mazda 6 2007, výborný stav',
+    'Honda Civic 2010, servisní kniha',
+    'Nissan Qashqai 2011, 4x4, SUV',
+    'Hyundai i30 2013, jako nové',
+    'Kia Ceed 2012, 1. majitel',
+    'Škoda Superb 2010, kůže, elegán',
+    'Audi A4 2006, nafta, top stav',
+    'Mercedes C220 CDI, kůže, navi',
+    'VW Passat 2008, combi, 7 míst',
+    'Citroën C4 2009, nízká spotřeba',
+    'Fiat Punto 2007, ideál do města',
+    'Mitsubishi Outlander 2012, SUV',
+    'Suzuki Swift 2011, ekonomický',
+    'Ford Mondeo 2007, combi, táhné',
+    'Škoda Roomster 2008, pro rodinu',
+    'VW Polo 2010, 59k km, perfektní',
+    'Alfa Romeo 159 2007, sporťák',
+    'Volvo V50 2006, bezpečný, servis',
+    'Subaru Forester 2009, 4WD, terén',
+    'Dacia Logan 2011, levný provoz'
+  ]
 };
 
 // ─── TOWER DEFS ───────────────────────────────────────────────
@@ -285,22 +379,26 @@ function makeWave(n){
   const a=(type,count,startDelay)=>{
     for(let i=0;i<count;i++) q.push({type,t:startDelay+i*160});
   };
+  // Alternates area manager and chapter manager
+  const mgr=(count,startDelay)=>{
+    for(let i=0;i<count;i++) q.push({type:i%2===0?'areamgr':'chapermgr',t:startDelay+i*160});
+  };
   if(n===1){a('msg',8,0);}
   else if(n===2){a('msg',6,0);a('call',2,420);}
   else if(n===3){a('msg',8,0);a('task',3,500);}
   else if(n===4){a('msg',5,0);a('call',3,300);a('task',3,620);}
-  else if(n===5){a('msg',10,0);a('call',4,400);a('task',4,820);a('mgr',1,1300);}
-  else if(n===6){a('msg',8,0);a('task',6,400);a('mgr',2,950);}
-  else if(n===7){a('call',7,0);a('task',7,300);a('mgr',3,950);}
-  else if(n===8){a('msg',15,0);a('call',5,650);a('mgr',3,1250);a('corp',1,2100);}
-  else if(n===9){a('task',10,0);a('mgr',4,600);a('corp',2,1300);}
+  else if(n===5){a('msg',10,0);a('call',4,400);a('task',4,820);mgr(1,1300);}
+  else if(n===6){a('msg',8,0);a('task',6,400);mgr(2,950);}
+  else if(n===7){a('call',7,0);a('task',7,300);mgr(3,950);}
+  else if(n===8){a('msg',15,0);a('call',5,650);mgr(3,1250);a('corp',1,2100);}
+  else if(n===9){a('task',10,0);mgr(4,600);a('corp',2,1300);}
   else if(n===10){
     a('msg',12,0);a('call',8,500);a('task',8,850);
-    a('mgr',5,1500);a('corp',3,2300);
+    mgr(5,1500);a('corp',3,2300);
   } else {
     const x=n-10;
     a('msg',10+x*2,0);a('call',5+x,400);a('task',5+x,750);
-    a('mgr',3+x,1300);a('corp',1+Math.floor(x/2),2200);
+    mgr(3+x,1300);a('corp',1+Math.floor(x/2),2200);
   }
   return q.sort((a,b)=>a.t-b.t);
 }
