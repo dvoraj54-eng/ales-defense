@@ -132,9 +132,9 @@ canvas {
 .dbtn { border:2px solid #555; background:transparent; color:#aaa; padding:7px 18px;
   font-size:14px; border-radius:20px; cursor:pointer; font-weight:bold; transition:all 0.15s; }
 .dbtn:hover { border-color:#aaa; color:#fff; }
-.dbtn.sel-normal { border-color:#27ae60; color:#27ae60; background:rgba(39,174,96,0.15); }
-.dbtn.sel-hard   { border-color:#e67e22; color:#e67e22; background:rgba(230,126,34,0.15); }
-.dbtn.sel-digiteq{ border-color:#e74c3c; color:#e74c3c; background:rgba(231,76,60,0.15); }
+.dbtn.sel-tester  { border-color:#27ae60; color:#27ae60; background:rgba(39,174,96,0.15); }
+.dbtn.sel-techlead{ border-color:#e67e22; color:#e67e22; background:rgba(230,126,34,0.15); }
+.dbtn.sel-pm      { border-color:#e74c3c; color:#e74c3c; background:rgba(231,76,60,0.15); }
 .tip-grid {
   display:grid; grid-template-columns:1fr 1fr;
   gap:8px; width:100%; max-width:560px; margin-top:4px;
@@ -277,15 +277,15 @@ canvas {
     <div class="tip-grid">
       <div class="tip"><b>😤 Anger bar</b> fills as enemies hit. More anger = more damage for ALL towers.</div>
       <div class="tip"><b>😡 RAGE MODE</b> unlocks at 100% anger — triggers a devastating AoE shout.</div>
-      <div class="tip"><b>🛒 Bazoš.cz</b> converts Tasks into Czech car ads that heal Ales's stash!</div>
+      <div class="tip"><b>🛒 Bazoš.cz</b> converts Tasks into Czech car ads (heals on Tester only)!</div>
       <div class="tip"><b>👨‍💼 Delegation</b> assigns a team member to handle enemies. +2× vs Tasks & Calls.</div>
     </div>
     <div id="diff-picker-init">
       <div class="diff-row">
         <span style="font-size:13px;color:#888;align-self:center;">Difficulty:</span>
-        <button class="dbtn sel-normal" data-d="normal" onclick="setDiff('normal')">Normal</button>
-        <button class="dbtn" data-d="hard" onclick="setDiff('hard')">Hard 💀</button>
-        <button class="dbtn" data-d="digiteq" onclick="setDiff('digiteq')">Digiteq ☠️</button>
+        <button class="dbtn sel-tester" data-d="tester" onclick="setDiff('tester')">Tester</button>
+        <button class="dbtn" data-d="techlead" onclick="setDiff('techlead')">Tech Lead 💀</button>
+        <button class="dbtn" data-d="pm" onclick="setDiff('pm')">PM ☠️</button>
       </div>
     </div>
     <div style="display:flex;gap:12px;margin-top:4px;">
@@ -470,7 +470,7 @@ const TD = [
   {id:'mute',       name:'Mute Button',    emoji:'🔇',  cost:65,  rng:3.0, dmg:11, fr:88,  col:'#C0392B', sp:'stun',     tip:'Stuns Calls; normal dmg others'},
   {id:'ooo',        name:'Out of Office',  emoji:'🏖️', cost:80,  rng:2.6, dmg:6,  fr:110, col:'#F39C12', sp:'aoe',      tip:'AoE damage burst in range'},
   {id:'insta',      name:'Instagram',      emoji:'📸',  cost:55,  rng:3.4, dmg:0,  fr:58,  col:'#C13584', sp:'random',   tip:'🎲 Complete randomness'},
-  {id:'bazos',      name:'Bazoš.cz',       emoji:'🛒',  cost:200, rng:4.2, dmg:14, fr:140, col:'#E67E22', sp:'bazos',    tip:'Converts tasks→car ads (+heal), slows bosses'},
+  {id:'bazos',      name:'Bazoš.cz',       emoji:'🛒',  cost:200, rng:4.2, dmg:14, fr:140, col:'#E67E22', sp:'bazos',    tip:'Converts tasks→car ads (Tester: +½🔧 each), slows bosses'},
 ];
 
 const TEAM = ['Dan Šafář','Tomáš Novák','Tomáš Vančat','Vlado Malík','Standa Kozák','Kuba Tomášek','Dan Martínek','Radek Svoboda'];
@@ -514,7 +514,7 @@ const cx = cv.getContext('2d');
 const G = {
   // state
   gold:80, health:20, anger:0, wave:0,
-  diff:'normal',
+  diff:'tester',
   running:false, over:false, paused:false,
   rageReady:false, rageActive:false, rageTimer:0,
   frame:0,
@@ -540,7 +540,7 @@ const G = {
 
   reset(){
     Object.assign(this,{
-      gold:80, health:20, anger:0, wave:0,
+      gold:80, health:20, anger:0, wave:0, bazosHealAcc:0,
       running:true, over:false, paused:false,
       rageReady:false, rageActive:false, rageTimer:0, frame:0,
       towers:[], enemies:[], projs:[], particles:[], floats:[],
@@ -603,7 +603,7 @@ const G = {
     cx.fillStyle='#111128';
     cx.fillRect(0,0,CW,CH);
     // Reset UI values
-    this.health=20; this.gold=80; this.anger=0; this.wave=0;
+    this.health=20; this.gold=80; this.anger=0; this.wave=0; this.bazosHealAcc=0;
     this.ui();
     // Restore the original start overlay
     const ov=id('overlay');
@@ -616,7 +616,7 @@ const G = {
       <div class="tip-grid">
         <div class="tip"><b>😤 Anger bar</b> fills as enemies hit. More anger = more damage for ALL towers.</div>
         <div class="tip"><b>😡 RAGE MODE</b> unlocks at 100% anger — triggers a devastating AoE shout.</div>
-        <div class="tip"><b>🛒 Bazoš.cz</b> converts Tasks into Czech car ads that walk to the stash and heal Ales!</div>
+        <div class="tip"><b>🛒 Bazoš.cz</b> converts Tasks into Czech car ads (heals +½🔧 on Tester only)!</div>
         <div class="tip"><b>👨‍💼 Delegation</b> assigns a team member to handle enemies. +2× vs Tasks & Calls.</div>
       </div>
       ${diffPickerHTML()}
@@ -758,7 +758,7 @@ const G = {
     const label=type.texts[Math.floor(Math.random()*type.texts.length)];
     const [sx,sy]=WPIX[0];
     const slot=this.enemies.filter(e=>!e.dead).length % 3;
-    const hpMult={normal:1,hard:1.5,digiteq:2}[this.diff]||1;
+    const hpMult={tester:1,techlead:1.5,pm:2}[this.diff]||1;
     const hp=Math.round(type.hp*hpMult);
     const pool=MGR_NAMES[typeName];
     const managerName=pool?pool[Math.floor(Math.random()*pool.length)]:null;
@@ -816,11 +816,18 @@ const G = {
   hitStash(e){
     e.dead=true;
     if(e.type.id==='car'){
-      // Car ad delivers a sold item — heals +1 hardware
-      this.health=Math.min(20,this.health+1);
-      sv('sv-health',this.health);
-      this.spawnBurst(e.x,e.y,'🔧',4);
-      this.float(e.x,e.y-28,'+1 🔧 delivered!','#2ecc71');
+      if(this.diff==='tester'){
+        this.bazosHealAcc+=0.5;
+        if(this.bazosHealAcc>=1){
+          this.bazosHealAcc-=1;
+          this.health=Math.min(20,this.health+1);
+          sv('sv-health',this.health);
+          this.float(e.x,e.y-28,'+1 🔧 delivered!','#2ecc71');
+        } else {
+          this.float(e.x,e.y-28,'+½ 🔧 delivered!','#2ecc71');
+        }
+        this.spawnBurst(e.x,e.y,'🔧',4);
+      }
       return;
     }
     if(e.type.dmg>0){
@@ -963,10 +970,16 @@ const G = {
         this.spawnBurst(e.x,e.y,'🛒',2);
       }
     }
-    if(converted){
-      this.health=Math.min(20,this.health+1);
-      sv('sv-health',this.health);
-      this.float(tx,ty-30,'+1 🔧 (sold on Bazoš!)','#2ecc71');
+    if(converted && this.diff==='tester'){
+      this.bazosHealAcc+=0.5;
+      if(this.bazosHealAcc>=1){
+        this.bazosHealAcc-=1;
+        this.health=Math.min(20,this.health+1);
+        sv('sv-health',this.health);
+        this.float(tx,ty-30,'+1 🔧 (sold on Bazoš!)','#2ecc71');
+      } else {
+        this.float(tx,ty-30,'+½ 🔧 (sold on Bazoš!)','#2ecc71');
+      }
     }
     t.fa=10;
   },
@@ -1318,13 +1331,13 @@ function setDiff(d){
 }
 
 function diffPickerHTML(){
-  const d=G.diff||'normal';
+  const d=G.diff||'tester';
   const cls=v=>'dbtn'+(d===v?' sel-'+v:'');
   return `<div class="diff-row">
     <span style="font-size:13px;color:#888;align-self:center;">Difficulty:</span>
-    <button class="${cls('normal')}" data-d="normal" onclick="setDiff('normal')">Normal</button>
-    <button class="${cls('hard')}" data-d="hard" onclick="setDiff('hard')">Hard 💀</button>
-    <button class="${cls('digiteq')}" data-d="digiteq" onclick="setDiff('digiteq')">Digiteq ☠️</button>
+    <button class="${cls('tester')}" data-d="tester" onclick="setDiff('tester')">Tester</button>
+    <button class="${cls('techlead')}" data-d="techlead" onclick="setDiff('techlead')">Tech Lead 💀</button>
+    <button class="${cls('pm')}" data-d="pm" onclick="setDiff('pm')">PM ☠️</button>
   </div>`;
 }
 
