@@ -259,7 +259,7 @@ canvas {
   <canvas id="gc" width="920" height="598"></canvas>
 
   <!-- BOTTOM BAR -->
-  <div id="bottombar">
+  <div id="bottombar" style="display:none">
     <span class="barlabel">🏗️ Build:</span>
     <!-- tower buttons injected by JS -->
     <span class="hint">Left-click: place | Right-click: cancel</span>
@@ -312,21 +312,43 @@ canvas {
 const COLS = 20, ROWS = 13, CS = 46; // cell size
 const CW = COLS * CS, CH = ROWS * CS; // 920 × 598
 
-// Grid path: [col, row] waypoints
-const WAYPTS = [[-1,2],[6,2],[6,9],[13,9],[13,3],[COLS,3]];
-// Pixel centres
-const WPIX = WAYPTS.map(([c,r]) => [c*CS+CS/2, r*CS+CS/2]);
+// ─── MAPS ────────────────────────────────────────────────────
+const MAPS = [
+  { name:'MB Bondy A',           stashRow:3, waypts:[[-1,2],[6,2],[6,9],[13,9],[13,3],[COLS,3]] },
+  { name:'MB Bondy B',           stashRow:5, waypts:[[-1,10],[5,10],[5,3],[12,3],[12,9],[16,9],[16,5],[COLS,5]] },
+  { name:'PHA AFI 11th floor',   stashRow:3, waypts:[[-1,5],[7,5],[7,1],[14,1],[14,8],[16,8],[16,3],[COLS,3]] },
+  { name:'PHA AFI 12th floor',   stashRow:4, waypts:[[-1,7],[4,7],[4,1],[11,1],[11,9],[16,9],[16,4],[COLS,4]] },
+  { name:'PHA AFI 13th floor',   stashRow:4, waypts:[[-1,1],[8,1],[8,11],[14,11],[14,4],[COLS,4]] },
+  { name:'PHA Besnet Loft',      stashRow:4, waypts:[[-1,9],[3,9],[3,2],[10,2],[10,9],[15,9],[15,4],[COLS,4]] },
+  { name:'PHA Besnet 1st floor', stashRow:6, waypts:[[-1,4],[5,4],[5,10],[10,10],[10,2],[16,2],[16,6],[COLS,6]] },
+  { name:'MB Kovar',             stashRow:5, waypts:[[-1,3],[4,3],[4,10],[11,10],[11,2],[16,2],[16,5],[COLS,5]] },
+  { name:'Brno',                 stashRow:4, waypts:[[-1,6],[6,6],[6,1],[13,1],[13,8],[16,8],[16,4],[COLS,4]] },
+  { name:'Plzen',                stashRow:5, waypts:[[-1,8],[5,8],[5,2],[11,2],[11,10],[16,10],[16,5],[COLS,5]] },
+];
 
-// Build set of path cells
-const PATH = new Set();
-for (let i=0;i<WAYPTS.length-1;i++){
-  const [c1,r1]=WAYPTS[i],[c2,r2]=WAYPTS[i+1];
-  if(r1===r2) for(let c=Math.min(c1,c2);c<=Math.max(c1,c2);c++) PATH.add(`${c},${r1}`);
-  else        for(let r=Math.min(r1,r2);r<=Math.max(r1,r2);r++) PATH.add(`${c1},${r}`);
+const STASH_COL = COLS-1;
+let STASH_ROW = 3;
+let WAYPTS = MAPS[0].waypts;
+let WPIX   = WAYPTS.map(([c,r])=>[c*CS+CS/2, r*CS+CS/2]);
+let PATH   = new Set();
+
+function buildPath(wpts){
+  const p=new Set();
+  for(let i=0;i<wpts.length-1;i++){
+    const [c1,r1]=wpts[i],[c2,r2]=wpts[i+1];
+    if(r1===r2) for(let c=Math.min(c1,c2);c<=Math.max(c1,c2);c++) p.add(`${c},${r1}`);
+    else        for(let r=Math.min(r1,r2);r<=Math.max(r1,r2);r++) p.add(`${c1},${r}`);
+  }
+  return p;
 }
+PATH = buildPath(MAPS[0].waypts);
 
-// Stash cell (end of path, last reachable col)
-const STASH_COL = COLS-1, STASH_ROW = 3;
+function loadMap(map){
+  WAYPTS   = map.waypts;
+  WPIX     = WAYPTS.map(([c,r])=>[c*CS+CS/2, r*CS+CS/2]);
+  PATH     = buildPath(WAYPTS);
+  STASH_ROW= map.stashRow;
+}
 
 // ─── ENEMY TYPES ─────────────────────────────────────────────
 const ET = {
@@ -514,7 +536,7 @@ const cx = cv.getContext('2d');
 const G = {
   // state
   gold:80, health:20, anger:0, wave:0,
-  diff:'tester',
+  diff:'tester', mapName:'',
   running:false, over:false, paused:false,
   rageReady:false, rageActive:false, rageTimer:0,
   frame:0,
@@ -541,14 +563,21 @@ const G = {
   reset(){
     Object.assign(this,{
       gold:80, health:20, anger:0, wave:0, bazosHealAcc:0,
-      running:true, over:false, paused:false,
+      running:true, over:false, paused:false, mapName:this.mapName,
       rageReady:false, rageActive:false, rageTimer:0, frame:0,
       towers:[], enemies:[], projs:[], particles:[], floats:[],
       waveQ:[], wqIdx:0, wqElapsed:0, waveRunning:false,
       nextWaveTick:70, annText:'', annTimer:0,
       selTower:null, mCol:-1, mRow:-1,
     });
+    // Pick a random map
+    const map = MAPS[Math.floor(Math.random()*MAPS.length)];
+    this.mapName = map.name;
+    loadMap(map);
+    this.annText = '🗺️ ' + map.name;
+    this.annTimer = 180;
     id('overlay').style.display='none';
+    id('bottombar').style.display='flex';
     this.ui();
     updateBtns();
     requestAnimationFrame(()=>G.loop());
@@ -604,6 +633,7 @@ const G = {
     cx.fillRect(0,0,CW,CH);
     // Reset UI values
     this.health=20; this.gold=80; this.anger=0; this.wave=0; this.bazosHealAcc=0;
+    id('bottombar').style.display='none';
     this.ui();
     // Restore the original start overlay
     const ov=id('overlay');
@@ -749,6 +779,7 @@ const G = {
     this.drawAnnouncement();
     this.drawMultiplier();
     this.drawMgrWarning();
+    this.drawMapName();
 
     requestAnimationFrame(()=>G.loop());
   },
@@ -1022,9 +1053,9 @@ const G = {
     // Stash
     const sx=STASH_COL*CS+CS/2, sy=STASH_ROW*CS+CS/2;
     cx.fillStyle='rgba(46,204,113,0.08)';
-    cx.fillRect((COLS-2)*CS+2,2*CS+2,2*CS-4,3*CS-4);
+    cx.fillRect((COLS-2)*CS+2,(STASH_ROW-1)*CS+2,2*CS-4,3*CS-4);
     cx.strokeStyle='#2ecc71'; cx.lineWidth=1.5;
-    cx.strokeRect((COLS-2)*CS+2,2*CS+2,2*CS-4,3*CS-4);
+    cx.strokeRect((COLS-2)*CS+2,(STASH_ROW-1)*CS+2,2*CS-4,3*CS-4);
     this.emoji('🖥️',sx+2,sy-4,30);
     this.emoji('📱',sx-14,sy+18,18);
     this.emoji('💻',sx+16,sy+16,18);
@@ -1235,6 +1266,20 @@ const G = {
 
   hasMgr(){
     return this.enemies.some(e=>!e.dead&&(e.type.id==='areamgr'||e.type.id==='chapermgr'));
+  },
+
+  drawMapName(){
+    if(!this.mapName) return;
+    cx.save();
+    cx.font='bold 11px Segoe UI';
+    const tw=cx.measureText(this.mapName).width;
+    const pad=7, bh=18, bw=tw+pad*2+16;
+    const bx=6, by=6;
+    cx.fillStyle='rgba(10,10,30,0.75)';
+    roundRect(bx,by,bw,bh,4); cx.fill();
+    cx.fillStyle='#888'; cx.textAlign='left'; cx.textBaseline='middle';
+    cx.fillText('🗺️ '+this.mapName, bx+pad, by+bh/2);
+    cx.restore();
   },
 
   drawMgrWarning(){
