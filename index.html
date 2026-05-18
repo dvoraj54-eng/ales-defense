@@ -474,6 +474,7 @@ const TD = [
 ];
 
 const TEAM = ['Dan Šafář','Tomáš Novák','Tomáš Vančat','Vlado Malík','Standa Kozák','Kuba Tomášek','Dan Martínek','Radek Svoboda'];
+const MGR_NAMES = { areamgr:['Matus','Michal'], chapermgr:['Radek','Veronica'] };
 
 // ─── WAVE RECIPES ─────────────────────────────────────────────
 function makeWave(n){
@@ -759,9 +760,11 @@ const G = {
     const slot=this.enemies.filter(e=>!e.dead).length % 3;
     const hpMult={normal:1,hard:1.5,digiteq:2}[this.diff]||1;
     const hp=Math.round(type.hp*hpMult);
+    const pool=MGR_NAMES[typeName];
+    const managerName=pool?pool[Math.floor(Math.random()*pool.length)]:null;
     this.enemies.push({
       x:sx-30, y:sy, type, maxHp:hp, hp,
-      wi:1, label, slot, slowed:0, stunned:0, dead:false, bazos:false
+      wi:1, label, slot, slowed:0, stunned:0, dead:false, bazos:false, managerName
     });
   },
 
@@ -1080,6 +1083,20 @@ const G = {
         cx.fillStyle='white'; cx.font='bold 7px Segoe UI';
         cx.textAlign='center'; cx.textBaseline='middle';
         cx.fillText(btext,x+sz/2,y-sz/2-2);
+      }
+      // Name tag below emoji for named managers
+      if(e.managerName){
+        cx.save();
+        cx.font='bold 9px Segoe UI';
+        const nw=cx.measureText(e.managerName).width+10;
+        cx.fillStyle='rgba(10,10,30,0.88)';
+        roundRect(x-nw/2,y+sz/2+3,nw,13,3); cx.fill();
+        cx.strokeStyle=e.type.col; cx.lineWidth=1;
+        roundRect(x-nw/2,y+sz/2+3,nw,13,3); cx.stroke();
+        cx.fillStyle='#fff';
+        cx.textAlign='center'; cx.textBaseline='middle';
+        cx.fillText(e.managerName,x,y+sz/2+10);
+        cx.restore();
       }
       // HP bar (just above the emoji)
       const bw=Math.max(sz+8,40), bh=5, bx=x-bw/2, by=y-sz/2-8;
