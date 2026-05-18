@@ -332,7 +332,7 @@ const STASH_COL = COLS-1, STASH_ROW = 3;
 const ET = {
   msg:{
     id:'msg', name:'Teams Message', emoji:'💬',
-    hp:30, spd:0.82, dmg:1, ang:18, rwd:8, sz:26, tier:1,
+    hp:38, spd:1.00, dmg:1, ang:18, rwd:6, sz:26, tier:1,
     col:'#6264A7',
     texts:[
       "do you have a minute? 😊",
@@ -359,7 +359,7 @@ const ET = {
   },
   call:{
     id:'call', name:'Teams Call', emoji:'📞',
-    hp:90, spd:0.55, dmg:4, ang:30, rwd:20, sz:36, tier:2,
+    hp:110, spd:0.70, dmg:4, ang:30, rwd:15, sz:36, tier:2,
     col:'#0078D4',
     texts:[
       'Ares Pulse',
@@ -376,7 +376,7 @@ const ET = {
   },
   task:{
     id:'task', name:'Task', emoji:'📋',
-    hp:75, spd:0.50, dmg:5, ang:35, rwd:20, sz:34, tier:2,
+    hp:95, spd:0.63, dmg:5, ang:35, rwd:15, sz:34, tier:2,
     col:'#E07020',
     texts:[
       'Invoicing',
@@ -394,7 +394,7 @@ const ET = {
   },
   areamgr:{
     id:'areamgr', name:'Area Manager', emoji:'👔',
-    hp:280, spd:0.34, dmg:10, ang:45, rwd:50, sz:42, tier:3,
+    hp:320, spd:0.43, dmg:10, ang:45, rwd:40, sz:42, tier:3,
     col:'#8E44AD',
     texts:[
       'Can you help me with tender calculation?',
@@ -406,7 +406,7 @@ const ET = {
   },
   chapermgr:{
     id:'chapermgr', name:'Chapter Manager', emoji:'🧑‍💼',
-    hp:280, spd:0.34, dmg:10, ang:45, rwd:50, sz:42, tier:3,
+    hp:320, spd:0.43, dmg:10, ang:45, rwd:40, sz:42, tier:3,
     col:'#6C3483',
     texts:[
       'Do you really need Tomáš Novák for 50%?',
@@ -419,7 +419,7 @@ const ET = {
   },
   corp:{
     id:'corp', name:'Corporate Boss', emoji:'🏢',
-    hp:850, spd:0.20, dmg:25, ang:60, rwd:120, sz:52, tier:4,
+    hp:950, spd:0.26, dmg:25, ang:60, rwd:100, sz:52, tier:4,
     col:'#2C3E50',
     texts:['Volkswagen','Škoda','Cariad','Alten','Embitel','Microsoft']
   }
@@ -480,28 +480,28 @@ const MGR_NAMES = { areamgr:['Matus','Michal'], chapermgr:['Radek','Veronica'] }
 function makeWave(n){
   const q=[];
   const a=(type,count,startDelay)=>{
-    for(let i=0;i<count;i++) q.push({type,t:startDelay+i*160});
+    for(let i=0;i<count;i++) q.push({type,t:startDelay+i*115});
   };
   // Alternates area manager and chapter manager
   const mgr=(count,startDelay)=>{
-    for(let i=0;i<count;i++) q.push({type:i%2===0?'areamgr':'chapermgr',t:startDelay+i*160});
+    for(let i=0;i<count;i++) q.push({type:i%2===0?'areamgr':'chapermgr',t:startDelay+i*130});
   };
-  if(n===1){a('msg',8,0);}
-  else if(n===2){a('msg',6,0);a('call',2,420);}
-  else if(n===3){a('msg',8,0);a('task',3,500);}
-  else if(n===4){a('msg',5,0);a('call',3,300);a('task',3,620);}
-  else if(n===5){a('msg',10,0);a('call',4,400);a('task',4,820);mgr(1,1300);}
-  else if(n===6){a('msg',8,0);a('task',6,400);mgr(2,950);}
-  else if(n===7){a('call',7,0);a('task',7,300);mgr(3,950);}
-  else if(n===8){a('msg',15,0);a('call',5,650);mgr(3,1250);a('corp',1,2100);}
-  else if(n===9){a('task',10,0);mgr(4,600);a('corp',2,1300);}
+  if(n===1){a('msg',10,0);}
+  else if(n===2){a('msg',8,0);a('call',3,380);}
+  else if(n===3){a('msg',10,0);a('task',4,450);}
+  else if(n===4){a('msg',6,0);a('call',4,280);a('task',4,580);}
+  else if(n===5){a('msg',12,0);a('call',5,380);a('task',5,760);mgr(1,1200);}
+  else if(n===6){a('msg',10,0);a('task',8,380);mgr(2,880);}
+  else if(n===7){a('call',9,0);a('task',9,280);mgr(3,880);}
+  else if(n===8){a('msg',18,0);a('call',6,600);mgr(4,1150);a('corp',1,2000);}
+  else if(n===9){a('task',12,0);mgr(5,550);a('corp',2,1200);}
   else if(n===10){
-    a('msg',12,0);a('call',8,500);a('task',8,850);
-    mgr(5,1500);a('corp',3,2300);
+    a('msg',15,0);a('call',10,450);a('task',10,800);
+    mgr(6,1400);a('corp',3,2200);
   } else {
     const x=n-10;
-    a('msg',10+x*2,0);a('call',5+x,400);a('task',5+x,750);
-    mgr(3+x,1300);a('corp',1+Math.floor(x/2),2200);
+    a('msg',12+x*2,0);a('call',6+x,350);a('task',6+x,700);
+    mgr(4+x,1200);a('corp',2+Math.floor(x/2),2100);
   }
   return q.sort((a,b)=>a.t-b.t);
 }
@@ -513,7 +513,7 @@ const cx = cv.getContext('2d');
 // ─── GAME OBJECT ──────────────────────────────────────────────
 const G = {
   // state
-  gold:100, health:20, anger:0, wave:0,
+  gold:80, health:20, anger:0, wave:0,
   diff:'normal',
   running:false, over:false, paused:false,
   rageReady:false, rageActive:false, rageTimer:0,
@@ -540,12 +540,12 @@ const G = {
 
   reset(){
     Object.assign(this,{
-      gold:100, health:20, anger:0, wave:0,
+      gold:80, health:20, anger:0, wave:0,
       running:true, over:false, paused:false,
       rageReady:false, rageActive:false, rageTimer:0, frame:0,
       towers:[], enemies:[], projs:[], particles:[], floats:[],
       waveQ:[], wqIdx:0, wqElapsed:0, waveRunning:false,
-      nextWaveTick:90, annText:'', annTimer:0,
+      nextWaveTick:70, annText:'', annTimer:0,
       selTower:null, mCol:-1, mRow:-1,
     });
     id('overlay').style.display='none';
@@ -603,7 +603,7 @@ const G = {
     cx.fillStyle='#111128';
     cx.fillRect(0,0,CW,CH);
     // Reset UI values
-    this.health=20; this.gold=100; this.anger=0; this.wave=0;
+    this.health=20; this.gold=80; this.anger=0; this.wave=0;
     this.ui();
     // Restore the original start overlay
     const ov=id('overlay');
@@ -695,7 +695,7 @@ const G = {
       if(this.wqIdx>=this.waveQ.length && this.enemies.length===0){
         this.waveRunning=false;
         if(this.wave>=10){ this.victory(); return; }
-        this.nextWaveTick=200;
+        this.nextWaveTick=150;
       }
     } else {
       if(this.nextWaveTick>0){
