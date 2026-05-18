@@ -567,7 +567,7 @@ const TD = [
 ];
 
 const TEAM = ['Dan Šafář','Tomáš Novák','Tomáš Vančat','Vlado Malík','Standa Kozák','Kuba Tomášek','Dan Martínek','Radek Svoboda'];
-const MGR_NAMES = { areamgr:['Matus','Michal'], chapermgr:['Radek','Veronica'] };
+const MGR_NAMES = { areamgr:['Matus','Michal'], chapermgr:['Radek','Veronika'] };
 
 // ─── WAVE RECIPES ─────────────────────────────────────────────
 function makeWave(n){
@@ -1221,7 +1221,8 @@ const G = {
       // Stun stars
       if(e.stunned>0) this.emoji('⭐',x+sz/2+2,y-sz/2,12);
       // Emoji body
-      this.emoji(e.type.emoji,x,y,sz);
+      const eEmoji = e.managerName==='Veronika' ? '👩‍💼' : e.type.emoji;
+      this.emoji(eEmoji,x,y,sz);
       // Tier badge for managers/bosses
       if(e.type.tier>=3){
         const btext=e.type.tier===4?'BOSS':'MGR';
