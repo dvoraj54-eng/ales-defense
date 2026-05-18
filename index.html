@@ -1156,6 +1156,25 @@ const G = {
     cx.fillStyle='white'; cx.font='bold 10px Segoe UI';
     cx.textAlign='center'; cx.textBaseline='top';
     cx.fillText('Ales',ax,ay+32);
+    // Speech bubble during rage
+    if(this.rageActive){
+      const bx=ax+10, by=ay-36;
+      const pulse=0.85+Math.sin(this.frame*0.25)*0.15;
+      cx.save();
+      cx.translate(bx,by);
+      cx.scale(pulse,pulse);
+      cx.font='bold 13px Segoe UI';
+      cx.textAlign='center'; cx.textBaseline='middle';
+      const tw=cx.measureText('KURVAAA!').width;
+      const pad=6, bw=tw+pad*2, bh=18;
+      cx.fillStyle='#e74c3c';
+      roundRect(-bw/2,-bh/2,bw,bh,5); cx.fill();
+      // tail
+      cx.beginPath(); cx.moveTo(-6,bh/2); cx.lineTo(0,bh/2+7); cx.lineTo(6,bh/2); cx.closePath(); cx.fill();
+      cx.fillStyle='white';
+      cx.fillText('KURVAAA!',0,0);
+      cx.restore();
+    }
   },
 
   drawTowers(){
