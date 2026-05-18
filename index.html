@@ -748,6 +748,7 @@ const G = {
     this.drawPreview();
     this.drawAnnouncement();
     this.drawMultiplier();
+    this.drawMgrWarning();
 
     requestAnimationFrame(()=>G.loop());
   },
@@ -762,6 +763,10 @@ const G = {
     const hp=Math.round(type.hp*hpMult);
     const pool=MGR_NAMES[typeName];
     const managerName=pool?pool[Math.floor(Math.random()*pool.length)]:null;
+    if(managerName && !this.hasMgr()){
+      this.annText='👔 Manager incoming — Bazoš.cz is powerless!';
+      this.annTimer=220;
+    }
     this.enemies.push({
       x:sx-30, y:sy, type, maxHp:hp, hp,
       wi:1, label, slot, slowed:0, stunned:0, dead:false, bazos:false, managerName
@@ -816,7 +821,7 @@ const G = {
   hitStash(e){
     e.dead=true;
     if(e.type.id==='car'){
-      if(this.diff==='tester'){
+      if(this.diff==='tester' && !this.hasMgr()){
         this.bazosHealAcc+=0.5;
         if(this.bazosHealAcc>=1){
           this.bazosHealAcc-=1;
@@ -970,7 +975,7 @@ const G = {
         this.spawnBurst(e.x,e.y,'🛒',2);
       }
     }
-    if(converted && this.diff==='tester'){
+    if(converted && this.diff==='tester' && !this.hasMgr()){
       this.bazosHealAcc+=0.5;
       if(this.bazosHealAcc>=1){
         this.bazosHealAcc-=1;
@@ -1226,6 +1231,25 @@ const G = {
     cx.save(); cx.font=`bold ${sz}px Segoe UI`;
     cx.fillStyle=col||'white'; cx.textAlign='center'; cx.textBaseline='middle';
     cx.fillText(txt,x,y); cx.restore();
+  },
+
+  hasMgr(){
+    return this.enemies.some(e=>!e.dead&&(e.type.id==='areamgr'||e.type.id==='chapermgr'));
+  },
+
+  drawMgrWarning(){
+    if(!this.hasMgr()) return;
+    const txt='👔 Manager on site — Bazoš.cz car ads are powerless!';
+    cx.save();
+    cx.font='bold 11px Segoe UI';
+    const tw=cx.measureText(txt).width;
+    const pad=10, bh=22, bw=tw+pad*2;
+    const bx=CW/2-bw/2, by=CH-28;
+    cx.fillStyle='rgba(142,68,173,0.85)';
+    roundRect(bx,by,bw,bh,5); cx.fill();
+    cx.fillStyle='#fff'; cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText(txt,CW/2,by+bh/2);
+    cx.restore();
   },
 
   // ── HELPERS ──────────────────────────────────────────────────
